@@ -3,7 +3,6 @@ include ':app'
 def localPropertiesFile = new File(rootProject.projectDir, "local.properties")
 def properties = new Properties()
 
-// Use safe check instead of assert — FlutLab may not have local.properties at parse time
 if (localPropertiesFile.exists()) {
     localPropertiesFile.withReader("UTF-8") { reader -> properties.load(reader) }
 }

@@ -14,6 +14,12 @@ if (flutterRoot == null) {
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
 
+// Signing config from local.properties (injected by Codemagic)
+def keystoreFile     = localProperties.getProperty('storeFile')
+def keystorePassword = localProperties.getProperty('storePassword')
+def keyAlias         = localProperties.getProperty('keyAlias')
+def keyPassword      = localProperties.getProperty('keyPassword')
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
@@ -22,30 +28,50 @@ android {
     namespace       "app.airpulse"
     compileSdkVersion 34
 
+    // Java 17 — Codemagic fournit Java 17 par défaut
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = '11' }
+    kotlinOptions { jvmTarget = '17' }
 
     sourceSets { main.java.srcDirs += 'src/main/kotlin' }
 
+    signingConfigs {
+        // Signing config release — activé si keystore présent (Codemagic workflow)
+        if (keystoreFile != null) {
+            release {
+                storeFile     file(keystoreFile)
+                storePassword keystorePassword
+                keyAlias      keyAlias
+                keyPassword   keyPassword
+            }
+        }
+    }
+
     defaultConfig {
-        applicationId   "app.airpulse"
-        minSdkVersion 21
+        applicationId    "app.airpulse"
+        minSdkVersion    21
         targetSdkVersion 34
-        versionCode     flutterVersionCode.toInteger()
-        versionName     flutterVersionName
-        multiDexEnabled true
+        versionCode      flutterVersionCode.toInteger()
+        versionName      flutterVersionName
+        multiDexEnabled  true
     }
 
     buildTypes {
-        release {
-            signingConfig signingConfigs.debug
-            minifyEnabled    false
-            shrinkResources  false
+        debug {
+            minifyEnabled   false
+            shrinkResources false
         }
-        debug { minifyEnabled false }
+        release {
+            minifyEnabled   false
+            shrinkResources false
+            if (keystoreFile != null) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
+        }
     }
 }
 
@@ -54,5 +80,5 @@ flutter { source '../..' }
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation 'androidx.core:core-ktx:1.12.0'
 }

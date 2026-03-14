@@ -1,13 +1,13 @@
 buildscript {
-    // Kotlin 1.8.22 — compatible AGP 7.4.2, stable on FlutLab
-    ext.kotlin_version = '1.8.22'
+    // Kotlin 1.9.22 — compatible AGP 8.1.0 et Java 17
+    ext.kotlin_version = '1.9.22'
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        // AGP 7.4.2 + Gradle 7.6.3 = proven FlutLab matrix
-        classpath 'com.android.tools.build:gradle:7.4.2'
+        // AGP 8.1.0 — standard Codemagic 2025, Java 17 requis
+        classpath 'com.android.tools.build:gradle:8.1.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
