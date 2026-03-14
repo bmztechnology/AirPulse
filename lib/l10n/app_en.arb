@@ -1,0 +1,253 @@
+{
+  "@@locale": "en",
+  "appTitle": "AirPulse",
+  "@appTitle": {
+    "description": "Application name"
+  },
+  "appTagline": "Air Quality Monitor",
+  "navHome": "Home",
+  "navData": "Data",
+  "navMap": "Map",
+  "navAlerts": "Alerts",
+  "navProfile": "Profile",
+  "aqiLabel": "AQI Index",
+  "aqiSource": "↻ Real-time · WAQI / Open-Meteo",
+  "aqiUpdated": "Updated {time}",
+  "@aqiUpdated": {
+    "description": "AQI last update time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "statusGood": "Good quality",
+  "statusModerate": "Moderate quality",
+  "statusUnhealthySensitive": "Unhealthy for sensitive groups",
+  "statusUnhealthy": "Unhealthy",
+  "statusVeryUnhealthy": "Very unhealthy",
+  "statusHazardous": "Hazardous",
+  "verdictGo": "✅ FAVORABLE CONDITIONS — Outing recommended",
+  "verdictCaution": "⚠️ MODERATE CONDITIONS — Caution advised",
+  "verdictAvoid": "🚫 UNFAVORABLE — Avoid outdoor exposure",
+  "profileLabel": "My profile",
+  "profileCyclistLabel": "Cyclist",
+  "profileCyclistTitle": "Cyclist Recommendation",
+  "profileCyclistSub": "Urban & road cycling",
+  "profileAthleteLabel": "Athlete",
+  "profileAthleteTitle": "Athlete Recommendation",
+  "profileAthleteSub": "Running, intense sport",
+  "profileSickLabel": "Patient",
+  "profileSickTitle": "Patient Recommendation",
+  "profileSickSub": "Asthma, COPD, cardiac",
+  "profileNormalLabel": "Normal",
+  "profileNormalTitle": "General Population",
+  "profileNormalSub": "Healthy adult",
+  "profileChildLabel": "Child",
+  "profileChildTitle": "Child & Teen",
+  "profileChildSub": "Higher sensitivity",
+  "profileElderlyLabel": "Senior",
+  "profileElderlyTitle": "Senior (65+)",
+  "profileElderlySub": "Cardiovascular risk",
+  "sectionPollutants": "Detailed pollutants",
+  "sectionForecast": "24h forecast",
+  "sectionInsights": "Health insights",
+  "seeAll": "See all →",
+  "mapTitle": "Pollution map",
+  "mapLayerAqi": "AQI",
+  "mapLayerPm25": "PM2.5",
+  "mapLayerPm10": "PM10",
+  "mapLayerNo2": "NO₂",
+  "mapLayerO3": "O₃",
+  "mapLayerWind": "Wind",
+  "mapExplore": "Explore",
+  "mapNearbyStations": "Nearby stations",
+  "alertTitle": "Air quality alert",
+  "alertScreenTitle": "Alerts & Notifications",
+  "alertAqiModerate": "AQI > 50 (Moderate)",
+  "alertAqiModerateDesc": "Light alert",
+  "alertAqiPoor": "AQI > 100 (Poor)",
+  "alertAqiPoorDesc": "Critical alert",
+  "alertPm25WHO": "PM2.5 > 15 μg/m³",
+  "alertPm25WHODesc": "WHO threshold exceeded",
+  "alertCyclistReminder": "Cycling reminder",
+  "alertCyclistReminderDesc": "Best morning window",
+  "alertPollen": "Pollen alerts",
+  "alertPollenDesc": "For allergy sufferers",
+  "shareTitle": "Share air quality",
+  "shareSub": "Choose format and destination",
+  "shareBtn": "Share this report",
+  "shareCopy": "Copy",
+  "shareMore": "More",
+  "shareFmtCard": "🖼️ Visual card",
+  "shareFmtText": "📝 Text",
+  "shareFmtLink": "🔗 Link",
+  "shareCopied": "✅ Copied!",
+  "shareWhatsApp": "WhatsApp",
+  "shareTelegram": "Telegram",
+  "shareInstagram": "Instagram",
+  "shareTwitter": "Twitter/X",
+  "shareSMS": "SMS",
+  "shareEmail": "Email",
+  "settingsTitle": "Profile & Settings",
+  "settingsMyProfile": "My health profile",
+  "settingsActivityType": "Activity type",
+  "settingsActivityTypeDesc": "Urban cyclist and sport",
+  "settingsRespSensitivity": "Respiratory sensitivity",
+  "settingsRespSensitivityDesc": "Mild asthma, rhinitis",
+  "settingsMedical": "Medical conditions",
+  "settingsMedicalDesc": "Manages recommendations",
+  "settingsPersonalThreshold": "Personal AQI threshold",
+  "settingsPersonalThresholdDesc": "Beyond this, critical alerts",
+  "settingsDataSources": "Data sources",
+  "settingsDisplay": "Display",
+  "settingsUnits": "Units",
+  "settingsUnitsDesc": "Measurement system",
+  "settingsLanguage": "Language",
+  "settingsLanguageDesc": "Auto-detected · {lang}",
+  "@settingsLanguageDesc": {
+    "description": "Language setting subtitle",
+    "placeholders": {
+      "lang": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsDarkMode": "Dark mode",
+  "settingsAbout": "About",
+  "settingsVersion": "AirPulse v2.1.0",
+  "settingsVersionDesc": "Free data, no ads",
+  "settingsMethodology": "Methodology",
+  "settingsMethodologyDesc": "Based on WHO 2021 standards",
+  "insightRespTitle": "Respiratory capacity",
+  "insightRespText": "At this AQI level, physical exertion is safe. PM2.5 well below WHO threshold (15 μg/m³). Deep breathing is not dangerous.",
+  "insightCardioTitle": "Cardiovascular health",
+  "insightCardioText": "Moderate NO₂ (38 μg/m³ vs WHO threshold 40). Slight attention recommended for asthmatics on major roads.",
+  "insightPollenTitle": "Pollen & allergens",
+  "insightPollenText": "Pollen level: Medium (Grasses 3/5). Moderate allergic risk — take your antihistamines if sensitive.",
+  "insightWeatherTitle": "Weather conditions",
+  "insightWeatherText": "Temperature 18°C · Humidity 62% · Pressure 1013 hPa · UV Index 3 (moderate). Good pollutant dispersion forecast.",
+  "now": "Now",
+  "good": "Good",
+  "moderate": "Moderate",
+  "poor": "Poor",
+  "locationRefresh": "Refresh location",
+  "detectedAuto": "Auto-detected",
+  "sourceWAQI": "WAQI",
+  "sourceAirParif": "AirParif",
+  "pm25Label": "PM 2.5",
+  "pm10Label": "PM 10",
+  "no2Label": "NO₂",
+  "o3Label": "O₃ Ozone",
+  "so2Label": "SO₂",
+  "coLabel": "CO",
+  "pollutantsTitle": "Detailed data",
+  "chartTitle": "PM2.5 Evolution — last 24 hours",
+  "whoThreshold": "WHO {value}",
+  "@whoThreshold": {
+    "description": "WHO threshold label",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "scaleTitle": "AQI Scale & WHO thresholds",
+  "particles": "Particles",
+  "gases": "Pollutant gases",
+  "weather": "Weather conditions",
+  "biological": "Biological & allergens",
+  "dataSources": "Data sources",
+  "tempLabel": "Temperature",
+  "humidityLabel": "Humidity",
+  "windLabel": "Wind",
+  "pressureLabel": "Pressure",
+  "uvLabel": "UV Index",
+  "visibilityLabel": "Visibility",
+  "pollenTotalLabel": "Total pollen",
+  "grassLabel": "Grasses",
+  "treesLabel": "Trees",
+  "moldsLabel": "Molds",
+  "vocLabel": "VOC",
+  "alertHistoryLabel": "History",
+  "alertConfigureLabel": "Configure alerts",
+  "settingsPrivacy": "Privacy policy",
+  "sourceWaqiDesc": "11,000+ real-time stations",
+  "sourceOpenMeteoDesc": "Forecasts — no API key",
+  "sourceOpenAqDesc": "Government data",
+  "sourceCopernicusDesc": "European satellite",
+  "sourceAirparifDesc": "Île-de-France network",
+  "timeHoursAgo": "{n}h ago",
+  "timeDaysAgo": "{n}d ago",
+  "timeYesterday": "Yesterday",
+  "timeMinutesAgo": "{n}min ago",
+  "@timeHoursAgo": {
+    "description": "Hours ago",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "@timeDaysAgo": {
+    "description": "Days ago",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "@timeMinutesAgo": {
+    "description": "Minutes ago",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tipMaskNotRequired": "Mask not required at this level.",
+  "tipModerateConditions": "Moderate conditions — limit long outings.",
+  "tipMaskFFP2Recommended": "FFP2 mask recommended if discomfort.",
+  "tipKeepTreatmentHandy": "Keep your treatment within reach.",
+  "tipAvoidNonEssentialOuting": "Avoid all non-essential outings.",
+  "tipStayIndoorsWindowsClosed": "Stay indoors, windows closed.",
+  "tipConsultDoctorIfSymptoms": "Consult a doctor if symptoms occur.",
+  "tipExcellentAirOutdoors": "Excellent air — outdoor activities unrestricted.",
+  "tipPreferParksFromTraffic": "Prefer parks away from traffic.",
+  "tipLimitIntensePhysical": "Limit intense physical activities.",
+  "tipPreferOffPeakHours": "Prefer off-peak hours for outings.",
+  "tipLimitLongOutdoorEffort": "Avoid prolonged outdoor exertion.",
+  "tipLimitTimeOutdoors": "Limit time spent outdoors.",
+  "tipCyclistExcellent": "AQI {aqi} — Excellent for {sport}. No restrictions.",
+  "@tipCyclistExcellent": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "sport": {
+        "type": "String"
+      }
+    }
+  },
+  "tipCyclistSport": "cycling",
+  "tipAthleteLabel": "sport",
+  "tipPreferGreenwaysParks": "Prefer greenways and parks (AQI 20–30 locally).",
+  "tipReduceIntenseEffort": "Moderate conditions — reduce intense effort.",
+  "tipMaskSensitivePeople": "Mask recommended for sensitive people.",
+  "tipPreferOffPeakMorning": "Prefer off-peak hours (early morning).",
+  "tipAvoidProlongedOutdoor": "Avoid prolonged outdoor exertion.",
+  "tipMaskFFP2Strong": "FFP2 mask strongly recommended.",
+  "tipPreferIndoor": "Prefer indoor activities.",
+  "tipBronchodilator": "Keep bronchodilator within reach.",
+  "tipGoodConditions": "Good conditions. {profile} outing recommended.",
+  "@tipGoodConditions": {
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
+  "tipOutdoorUnrestricted": "Outdoor activities without restriction.",
+  "tipBestWindow": "Best window: 06h–09h and 20h–22h.",
+  "tipMaskNotNeeded": "FFP2 mask not required at this level."
+}

@@ -1,0 +1,68 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+pubspec.lock
+
+# Android
+**/android/local.properties
+**/android/.gradle/
+**/android/captures/
+# **/android/gradlew  # Keep: required for FlutLab build
+# **/android/gradlew.bat  # Keep: required for FlutLab build
+**/android/key.properties
+**/*.keystore
+**/*.jks
+
+# iOS
+**/ios/.symlinks/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Pods/
+**/ios/ServiceDefinitions.json
+# **/ios/Runner/GeneratedPluginRegistrant.*  # Keep
+
+# Xcode
+*.mode1v3
+*.mode2v3
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.xccheckout
+*.xcsnapshot
+*.xcscmblueprint
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.code-workspace
+
+# Generated l10n — doit être généré via flutter gen-l10n
+lib/l10n/app_localizations.dart
+lib/l10n/app_localizations_*.dart
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+
+# Secrets
+*.env
+.env*
+local.properties
