@@ -1,44 +1,52 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
 def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
+def localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
+    localPropertiesFile.withReader("UTF-8") { reader ->
         localProperties.load(reader)
     }
 }
 
-def flutterRoot = localProperties.getProperty('flutter.sdk')
-if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
-}
+def flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
+def flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
-def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
-
-// Signing config from local.properties (injected by Codemagic)
-def keystoreFile     = localProperties.getProperty('storeFile')
-def keystorePassword = localProperties.getProperty('storePassword')
-def keyAlias         = localProperties.getProperty('keyAlias')
-def keyPassword      = localProperties.getProperty('keyPassword')
-
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+def keystoreFile     = localProperties.getProperty("storeFile")
+def keystorePassword = localProperties.getProperty("storePassword")
+def keyAlias         = localProperties.getProperty("keyAlias")
+def keyPassword      = localProperties.getProperty("keyPassword")
 
 android {
-    namespace       "app.airpulse"
-    compileSdkVersion 34
+    namespace "app.airpulse"
+    compileSdk 34
+    ndkVersion flutter.ndkVersion
 
-    // Java 17 — Codemagic fournit Java 17 par défaut
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = '17' }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 
-    sourceSets { main.java.srcDirs += 'src/main/kotlin' }
+    sourceSets {
+        main.java.srcDirs += "src/main/kotlin"
+    }
+
+    defaultConfig {
+        applicationId "app.airpulse"
+        minSdk 21
+        targetSdk 34
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+        multiDexEnabled true
+    }
 
     signingConfigs {
-        // Signing config release — activé si keystore présent (Codemagic workflow)
         if (keystoreFile != null) {
             release {
                 storeFile     file(keystoreFile)
@@ -49,36 +57,25 @@ android {
         }
     }
 
-    defaultConfig {
-        applicationId    "app.airpulse"
-        minSdkVersion    21
-        targetSdkVersion 34
-        versionCode      flutterVersionCode.toInteger()
-        versionName      flutterVersionName
-        multiDexEnabled  true
-    }
-
     buildTypes {
         debug {
-            minifyEnabled   false
-            shrinkResources false
+            minifyEnabled false
         }
         release {
-            minifyEnabled   false
+            minifyEnabled false
             shrinkResources false
-            if (keystoreFile != null) {
-                signingConfig signingConfigs.release
-            } else {
-                signingConfig signingConfigs.debug
-            }
+            signingConfig keystoreFile != null
+                ? signingConfigs.release
+                : signingConfigs.debug
         }
     }
 }
 
-flutter { source '../..' }
+flutter {
+    source "../.."
+}
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.22"
+    implementation "androidx.multidex:multidex:2.0.1"
 }
