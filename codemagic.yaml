@@ -1,111 +1,12 @@
-# ═══════════════════════════════════════════════════════════════════
-# AirPulse — Codemagic CI/CD Configuration
-# ═══════════════════════════════════════════════════════════════════
-# Workflows:
-#   1. android-debug   → APK debug téléchargeable (gratuit, sans signing)
-#   2. android-release → AAB release signé (nécessite keystore)
-#   3. ios-debug       → IPA simulator (mac_mini_m2 requis)
-#
-# Free tier: 500 min/mois sur mac_mini_m2
-# Repo: https://github.com/bmztechnology/AirPulse
-# ═══════════════════════════════════════════════════════════════════
-
 workflows:
-
-  # ─────────────────────────────────────────────────────────────────
-  # WORKFLOW 1 — Android Debug APK (no signing required)
-  # Résultat : app-debug.apk téléchargeable directement
-  # ─────────────────────────────────────────────────────────────────
   android-debug:
     name: Android Debug APK
-    instance_type: mac_mini_m2
-    max_build_duration: 60
-
-    environment:
-      flutter: stable        # Dernière version stable Flutter
-      java: 17               # Java 17 — Codemagic le fournit nativement
-      cache:
-        cache_paths:
-          - ~/.gradle/caches
-          - ~/.pub-cache
-
-    triggering:
-      events:
-        - push
-        - pull_request
-      branch_patterns:
-        - pattern: main
-          include: true
-        - pattern: develop
-          include: true
-      cancel_previous_builds: true
-
-    scripts:
-      # 1 — Générer local.properties (requis par Gradle)
-      - name: Set Android SDK location
-        script: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
-          echo "flutter.sdk=$FLUTTER_ROOT"  >> "$CM_BUILD_DIR/android/local.properties"
-
-      # 2 — Récupérer les dépendances
-      - name: Get Flutter packages
-        script: flutter pub get
-
-      # 3 — Générer les fichiers de localisation (flutter gen-l10n)
-      # CRITIQUE : doit être fait AVANT le build
-      - name: Generate localizations
-        script: flutter gen-l10n
-
-      # 4 — Analyse statique (optionnel — commenter pour accélérer)
-      - name: Flutter analyze
-        script: flutter analyze --no-fatal-infos
-        ignore_failure: true
-
-      # 5 — Tests unitaires
-      - name: Flutter test
-        script: flutter test
-        ignore_failure: true
-
-      # 6 — Build APK debug
-      - name: Build Android debug APK
-        script: |
-          flutter build apk \
-            --debug \
-            --build-name=1.0.0 \
-            --build-number=$(($(git rev-list HEAD --count)))
-
-    artifacts:
-      - build/**/outputs/**/*.apk
-      - build/**/outputs/**/mapping.txt
-      - flutter_drive.log
-
-    publishing:
-      email:
-        recipients:
-          - bmztechnology@users.noreply.github.com
-        notify:
-          success: true
-          failure: true
-
-  # ─────────────────────────────────────────────────────────────────
-  # WORKFLOW 2 — Android Release AAB (signing requis)
-  # Pré-requis Codemagic :
-  #   - Groupe d'env vars "android-signing" avec :
-  #     FCI_KEYSTORE       (keystore en base64)
-  #     FCI_KEYSTORE_PASS  (mot de passe keystore)
-  #     FCI_KEY_ALIAS      (alias de la clé)
-  #     FCI_KEY_PASS       (mot de passe de la clé)
-  # ─────────────────────────────────────────────────────────────────
-  android-release:
-    name: Android Release AAB
-    instance_type: mac_mini_m2
-    max_build_duration: 60
+    instance_type: linux_x2
+    max_build_duration: 30
 
     environment:
       flutter: stable
       java: 17
-      groups:
-        - android-signing   # Variables de signature — à créer dans Codemagic UI
       cache:
         cache_paths:
           - ~/.gradle/caches
@@ -113,10 +14,11 @@ workflows:
 
     triggering:
       events:
-        - tag               # Déclenché sur les tags (ex: v1.0.0)
-      tag_patterns:
-        - pattern: 'v*'
+        - push
+      branch_patterns:
+        - pattern: main
           include: true
+      cancel_previous_builds: true
 
     scripts:
       - name: Set Android SDK location
@@ -130,94 +32,14 @@ workflows:
       - name: Generate localizations
         script: flutter gen-l10n
 
-      # Configurer le keystore depuis la variable d'env base64
-      - name: Set up keystore
+      - name: Build Android APK
         script: |
-          echo $FCI_KEYSTORE | base64 --decode > /tmp/airpulse.keystore
-          cat >> "$CM_BUILD_DIR/android/local.properties" << EOF
-          storeFile=/tmp/airpulse.keystore
-          storePassword=$FCI_KEYSTORE_PASS
-          keyAlias=$FCI_KEY_ALIAS
-          keyPassword=$FCI_KEY_PASS
-          EOF
-
-      - name: Flutter analyze
-        script: flutter analyze --no-fatal-infos
-        ignore_failure: true
-
-      - name: Flutter test
-        script: flutter test
-        ignore_failure: true
-
-      - name: Build Android release AAB
-        script: |
-          flutter build appbundle \
-            --release \
-            --build-name=$(echo $CM_TAG | sed 's/v//') \
-            --build-number=$(($(git rev-list HEAD --count)))
-
-    artifacts:
-      - build/**/outputs/**/*.aab
-      - build/**/outputs/**/*.apk
-      - build/**/outputs/**/mapping.txt
-
-    publishing:
-      email:
-        recipients:
-          - bmztechnology@users.noreply.github.com
-        notify:
-          success: true
-          failure: true
-
-  # ─────────────────────────────────────────────────────────────────
-  # WORKFLOW 3 — iOS Debug (Simulator) — sans signing Apple
-  # Résultat : .app pour simulateur iOS
-  # ─────────────────────────────────────────────────────────────────
-  ios-simulator:
-    name: iOS Simulator Build
-    instance_type: mac_mini_m2
-    max_build_duration: 60
-
-    environment:
-      flutter: stable
-      xcode: latest
-      cocoapods: default
-      cache:
-        cache_paths:
-          - ~/.pub-cache
-
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
-
-    scripts:
-      - name: Get Flutter packages
-        script: flutter pub get
-
-      - name: Generate localizations
-        script: flutter gen-l10n
-
-      - name: Install CocoaPods dependencies
-        script: |
-          cd ios && pod install
-
-      - name: Flutter test
-        script: flutter test
-        ignore_failure: true
-
-      - name: Build iOS Simulator
-        script: |
-          flutter build ios \
-            --simulator \
-            --debug \
+          flutter build apk --debug \
             --build-name=1.0.0 \
             --build-number=$(($(git rev-list HEAD --count)))
 
     artifacts:
-      - build/ios/iphonesimulator/Runner.app
+      - build/**/outputs/**/*.apk
 
     publishing:
       email:
