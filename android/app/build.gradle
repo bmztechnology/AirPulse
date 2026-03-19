@@ -4,6 +4,17 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// Lire local.properties (généré par Codemagic avant le build)
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader("UTF-8") { reader -> localProperties.load(reader) }
+}
+
+// Versions versionCode/Name injectées par Flutter via local.properties
+def flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
+def flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0.0"
+
 android {
     namespace "app.airpulse"
     compileSdk 34
@@ -23,7 +34,6 @@ android {
         targetSdk flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-        multiDexEnabled true
     }
 
     buildTypes {
