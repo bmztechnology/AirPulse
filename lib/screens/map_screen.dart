@@ -141,7 +141,7 @@ class _MapScreenState extends State<MapScreen> {
                   // FIX-minor-1: errorTileCallback shows user feedback on tile load failure
                   TileLayer(
                     urlTemplate: 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
-                    additionalOptions: const {'s': 'a'},
+                    subdomains: const ['a', 'b', 'c'],
                     userAgentPackageName: 'app.airpulse',
                     maxNativeZoom: 19,
                     errorTileCallback: (tile, error, stackTrace) {
