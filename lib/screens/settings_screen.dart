@@ -135,7 +135,7 @@ class SettingsScreen extends StatelessWidget {
                       activeColor: aqiColor(ap.personalThreshold.toInt()),
                       inactiveColor: AppColors.cream3,
                       onChanged: ap.setPersonalThreshold,
-                      semanticFormatterCallback: (v) => 'AQI \${v.toInt()}', // FIX-MINOR-08
+                      semanticFormatterCallback: (v) => 'AQI ${v.toInt()}', // FIX-MINOR-08
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

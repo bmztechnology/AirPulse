@@ -313,7 +313,7 @@ class _WeatherGrid extends StatelessWidget {
               Text(it.value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.ink)),
             ]),
           ]),
-        ); }).toList(),
+        )).toList(),
       ),
     );
   }
@@ -365,7 +365,7 @@ class _PollenCard extends StatelessWidget {
             Text('${item.$2}/5', style: const TextStyle(
               fontSize: 11, fontFamily: 'DMMono', color: AppColors.ink3, fontWeight: FontWeight.w600)),
           ]),
-        ); }).toList(),
+        )).toList(),
       ),
     );
   }

@@ -145,7 +145,7 @@ class _MapScreenState extends State<MapScreen> {
                     userAgentPackageName: 'app.airpulse',
                     maxNativeZoom: 19,
                     errorTileCallback: (tile, error, stackTrace) {
-                      debugPrint('AirPulse: map tile load failed: \$error');
+                      debugPrint('AirPulse: map tile load failed: $error');
                     },
                   ),
                   // Pollution halo circles
