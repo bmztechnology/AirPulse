@@ -7,10 +7,11 @@ workflows:
     environment:
       flutter: stable
       java: 17
-      cache:
-        cache_paths:
-          - ~/.gradle/caches
-          - ~/.pub-cache
+
+    cache:
+      cache_paths:
+        - ~/.gradle/caches
+        - ~/.pub-cache
 
     triggering:
       events:
@@ -43,7 +44,6 @@ workflows:
     artifacts:
       - build/app/outputs/flutter-apk/app-debug.apk
       - build/**/outputs/**/*.apk
-      - build/**/outputs/**/*.aab
 
     publishing:
       email:
