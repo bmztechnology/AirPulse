@@ -32,14 +32,18 @@ workflows:
       - name: Generate localizations
         script: flutter gen-l10n
 
-      - name: Build Android APK
+      - name: Build Android Debug APK
         script: |
-          flutter build apk --debug \
+          flutter build apk \
+            --debug \
+            --no-tree-shake-icons \
             --build-name=1.0.0 \
             --build-number=$(($(git rev-list HEAD --count)))
 
     artifacts:
+      - build/app/outputs/flutter-apk/app-debug.apk
       - build/**/outputs/**/*.apk
+      - build/**/outputs/**/*.aab
 
     publishing:
       email:
