@@ -149,10 +149,8 @@ class AppProvider extends ChangeNotifier {
         return null;
       }
       return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-          timeLimit: Duration(seconds: 10),
-        ),
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 10),
       );
     } catch (e) {
       debugPrint('AirPulse: _getPosition error: $e');
