@@ -182,5 +182,7 @@
   "tipOutdoorUnrestricted": "Activités extérieures sans restriction.",
   "tipBestWindow": "Meilleure fenêtre : 06h–09h et 20h–22h.",
   "tipMaskNotNeeded": "Masque FFP2 non nécessaire à ce niveau.",
-  "alertNoHistory": "Aucune alerte déclenchée pour l'instant."
+  "alertNoHistory": "Aucune alerte déclenchée pour l'instant.",
+  "historyTitle": "Historique AQI 7 jours",
+  "historyEmpty": "Aucun historique — actualisez pour enregistrer votre première mesure."
 }

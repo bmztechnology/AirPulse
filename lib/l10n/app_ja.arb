@@ -182,5 +182,7 @@
   "tipOutdoorUnrestricted": "屋外活動に制限なし。",
   "tipBestWindow": "最適な時間帯: 06時〜09時および20時〜22時。",
   "tipMaskNotNeeded": "このレベルではFFP2マスクは不要です。",
-  "alertNoHistory": "まだアラートはありません。"
+  "alertNoHistory": "まだアラートはありません。",
+  "historyTitle": "7日間のAQI履歴",
+  "historyEmpty": "履歴はまだありません — 更新して最初の測定を記録してください。"
 }

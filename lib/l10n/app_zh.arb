@@ -182,5 +182,7 @@
   "tipOutdoorUnrestricted": "户外活动无限制。",
   "tipBestWindow": "最佳时段：06h–09h 和 20h–22h。",
   "tipMaskNotNeeded": "该水平下无需FFP2口罩。",
-  "alertNoHistory": "暂无触发的警报。"
+  "alertNoHistory": "暂无触发的警报。",
+  "historyTitle": "7天AQI历史",
+  "historyEmpty": "暂无历史记录 — 刷新以记录第一次测量。"
 }

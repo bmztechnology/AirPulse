@@ -1,16 +1,54 @@
 // lib/providers/app_provider.dart
-// Open-Meteo : gratuit, sans clé API
-// Nominatim  : reverse geocoding OSM, gratuit, sans clé
-// WAQI supprimé — token 'demo' retourne Shanghai depuis les CDN
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/air_quality_model.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Singleton notifications
+// ─────────────────────────────────────────────────────────────────────────────
+final _notif = FlutterLocalNotificationsPlugin();
+
+Future<void> initNotifications() async {
+  const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const ios     = DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
+  await _notif.initialize(
+    const InitializationSettings(android: android, iOS: ios),
+  );
+  // Demander la permission Android 13+
+  await _notif
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.requestNotificationsPermission();
+}
+
+Future<void> _sendNotification(String title, String body) async {
+  const android = AndroidNotificationDetails(
+    'airpulse_aqi', 'AirPulse AQI',
+    channelDescription: 'Alertes qualité de l\'air',
+    importance: Importance.high,
+    priority: Priority.high,
+    icon: '@mipmap/ic_launcher',
+  );
+  const ios = DarwinNotificationDetails();
+  await _notif.show(
+    DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    title, body,
+    const NotificationDetails(android: android, iOS: ios),
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AppProvider
+// ─────────────────────────────────────────────────────────────────────────────
 class AppProvider extends ChangeNotifier {
   Locale _locale = const Locale('en');
   Locale get locale => _locale;
@@ -41,6 +79,11 @@ class AppProvider extends ChangeNotifier {
   List<AqiStation> _stations = [];
   List<AqiStation> get stations => _stations;
 
+  // ── Historique 7 jours ────────────────────────────────────────────────────
+  List<Map<String, dynamic>> _aqiHistory = [];
+  List<Map<String, dynamic>> get aqiHistory => List.unmodifiable(_aqiHistory);
+
+  // ── Historique alertes ────────────────────────────────────────────────────
   List<Map<String, dynamic>> _alertHistory = [];
   List<Map<String, dynamic>> get alertHistory => List.unmodifiable(_alertHistory);
 
@@ -79,8 +122,12 @@ class AppProvider extends ChangeNotifier {
       for (final k in _alerts.keys.toList()) {
         final v = prefs.getBool('alert_$k'); if (v != null) _alerts[k] = v;
       }
-      final h = prefs.getString('alert_history');
-      if (h != null) { try { _alertHistory = (jsonDecode(h) as List).cast(); } catch (_) {} }
+      // Charger historique alertes
+      final ah = prefs.getString('alert_history');
+      if (ah != null) { try { _alertHistory = (jsonDecode(ah) as List).cast(); } catch (_) {} }
+      // Charger historique AQI 7 jours
+      final qh = prefs.getString('aqi_history');
+      if (qh != null) { try { _aqiHistory = (jsonDecode(qh) as List).cast(); } catch (_) {} }
     } catch (e) {
       debugPrint('AirPulse: prefs load: $e');
     } finally {
@@ -139,22 +186,20 @@ class AppProvider extends ChangeNotifier {
       if (pos != null) {
         _lastLat = pos.latitude; _lastLng = pos.longitude;
         await _fetchCityName(pos.latitude, pos.longitude);
-        // Séquentiel pour éviter la race condition :
-        // _fetchOpenMeteoWeather lit _data.aqi → doit s'exécuter APRÈS _fetchOpenMeteoAqi
         await _fetchOpenMeteoAqi(pos.latitude, pos.longitude);
         await _fetchOpenMeteoWeather(pos.latitude, pos.longitude);
         _buildNearbyStations(pos.latitude, pos.longitude);
+        unawaited(_saveAqiHistory());
+        unawaited(_checkAndTriggerAlerts());
       } else {
         _locationName = _locationName.isEmpty || _locationName == '…'
             ? 'Position GPS requise' : _locationName;
       }
     } catch (e) {
-      debugPrint('AirPulse: refreshLocation: $e');
-      _error = 'Impossible de récupérer les données. Vérifiez votre connexion.';
+      debugPrint('AirPulse: refresh: $e');
+      _error = 'Impossible de récupérer les données.';
     } finally {
-      _initialized = true; _loading = false;
-      unawaited(_checkAndTriggerAlerts());
-      notifyListeners();
+      _initialized = true; _loading = false; notifyListeners();
     }
   }
 
@@ -176,18 +221,19 @@ class AppProvider extends ChangeNotifier {
         _locationName = cc.isNotEmpty ? '$city, $cc' : '$city';
       }
     } catch (e) {
-      debugPrint('AirPulse: Nominatim: $e');
       _locationName = '${lat.toStringAsFixed(2)}°, ${lng.toStringAsFixed(2)}°';
     }
   }
 
-  // ── Open-Meteo AQI + prévisions ────────────────────────────────────────────
+  // ── Open-Meteo AQI + prévisions + POLLEN ──────────────────────────────────
   Future<void> _fetchOpenMeteoAqi(double lat, double lng) async {
     final uri = Uri.parse(
       'https://air-quality-api.open-meteo.com/v1/air-quality'
       '?latitude=$lat&longitude=$lng'
       '&current=pm2_5,nitrogen_dioxide,ozone,carbon_monoxide'
-      '&hourly=pm2_5&forecast_days=2',
+      '&hourly=pm2_5'
+      '&daily=grass_pollen,tree_pollen,mould_spores'
+      '&forecast_days=2',
     );
     final resp = await http.get(uri).timeout(const Duration(seconds: 10));
     if (resp.statusCode != 200) throw Exception('OpenMeteo AQ: ${resp.statusCode}');
@@ -202,10 +248,11 @@ class AppProvider extends ChangeNotifier {
     final co   = c('carbon_monoxide').toDouble() / 1000;
     final aqi  = _pm25ToAqi(pm25);
 
-    final hourly   = json['hourly'] as Map<String, dynamic>? ?? {};
-    final times    = (hourly['time'] as List?)?.cast<String>() ?? [];
-    final pm25h    = (hourly['pm2_5'] as List?)?.map((v) => (v as num?)?.toDouble() ?? 0.0).toList() ?? [];
-    final now      = DateTime.now();
+    // Prévisions PM2.5 horaires
+    final hourly = json['hourly'] as Map<String, dynamic>? ?? {};
+    final times  = (hourly['time'] as List?)?.cast<String>() ?? [];
+    final pm25h  = (hourly['pm2_5'] as List?)?.map((v) => (v as num?)?.toDouble() ?? 0.0).toList() ?? [];
+    final now    = DateTime.now();
     final forecast = List.generate(24, (i) {
       final t   = now.add(Duration(hours: i - 12));
       final idx = times.indexWhere((s) {
@@ -216,12 +263,41 @@ class AppProvider extends ChangeNotifier {
       return HourlyForecast(time: t, aqi: _pm25ToAqi(p), pm25: p);
     });
 
+    // ── POLLEN depuis Open-Meteo daily ────────────────────────────────────
+    PollenData pollen = _data.pollen;
+    final daily = json['daily'] as Map<String, dynamic>? ?? {};
+    if (daily.isNotEmpty) {
+      double _first(String k) {
+        final lst = daily[k] as List?;
+        if (lst == null || lst.isEmpty) return 0.0;
+        return (lst.first as num?)?.toDouble() ?? 0.0;
+      }
+      final grassRaw  = _first('grass_pollen');   // grains/m³
+      final treeRaw   = _first('tree_pollen');
+      final mouldRaw  = _first('mould_spores');
+
+      // Conversion grains/m³ → index 0-5 (échelle SILAM/European)
+      int _toIndex(double v) {
+        if (v < 10)  return 0;
+        if (v < 30)  return 1;
+        if (v < 100) return 2;
+        if (v < 300) return 3;
+        if (v < 600) return 4;
+        return 5;
+      }
+      final grassIdx  = _toIndex(grassRaw);
+      final treeIdx   = _toIndex(treeRaw);
+      final mouldIdx  = _toIndex(mouldRaw);
+      final totalIdx  = [grassIdx, treeIdx, mouldIdx].reduce((a, b) => a > b ? a : b);
+      pollen = PollenData(total: totalIdx, grass: grassIdx, trees: treeIdx, molds: mouldIdx);
+    }
+
     _data = AirQualityData(
       aqi: aqi, pm25: pm25, pm10: pm25 * 1.8, no2: no2,
       o3: o3, so2: 0, co: co,
       updatedAt: DateTime.now(), stationName: _locationName,
       stationSource: 'Open-Meteo', lat: lat, lng: lng,
-      weather: _data.weather, pollen: _data.pollen, forecast: forecast,
+      weather: _data.weather, pollen: pollen, forecast: forecast,
     );
   }
 
@@ -254,14 +330,38 @@ class AppProvider extends ChangeNotifier {
         stationSource: _data.stationSource, lat: _data.lat, lng: _data.lng,
         weather: weather, pollen: _data.pollen, forecast: _data.forecast,
       );
-    } catch (e) { debugPrint('AirPulse: OpenMeteo weather: $e'); }
+    } catch (e) { debugPrint('AirPulse: weather: $e'); }
+  }
+
+  // ── Historique AQI 7 jours ─────────────────────────────────────────────────
+  Future<void> _saveAqiHistory() async {
+    final entry = {
+      'time': DateTime.now().toIso8601String(),
+      'aqi': _data.aqi,
+      'pm25': _data.pm25,
+      'no2': _data.no2,
+      'o3': _data.o3,
+      'location': _locationName,
+    };
+    // Garder 7 jours × 24 mesures max = 168 entrées
+    final cutoff = DateTime.now().subtract(const Duration(days: 7));
+    _aqiHistory = [
+      entry,
+      ..._aqiHistory.where((e) {
+        final t = DateTime.tryParse(e['time'] as String? ?? '');
+        return t != null && t.isAfter(cutoff);
+      }),
+    ].take(168).toList();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('aqi_history', jsonEncode(_aqiHistory));
+    } catch (e) { debugPrint('AirPulse: saveAqiHistory: $e'); }
   }
 
   // ── Stations proches ───────────────────────────────────────────────────────
   void _buildNearbyStations(double lat, double lng) {
     final base = _data.aqi;
     final city = _locationName.split(',').first.trim();
-    // Offsets en degrés (~1km = 0.009°), avec direction et distance lisible
     final offsets = [
       (dlat:  0.009, dlng:  0.013, delta: -8,  label: '1 km N'),
       (dlat: -0.013, dlng: -0.009, delta:  5,  label: '1.5 km S'),
@@ -273,12 +373,53 @@ class AppProvider extends ChangeNotifier {
     _stations = offsets.map((o) {
       final aqi = (base + o.delta).clamp(1, 500);
       return AqiStation(
-        name: '$city — ${o.label}',
-        lat: lat + o.dlat, lng: lng + o.dlng, aqi: aqi,
-        pm25: aqi * 0.19, pm10: aqi * 0.45, no2: aqi * 0.9,
+        name: '$city — ${o.label}', lat: lat + o.dlat, lng: lng + o.dlng,
+        aqi: aqi, pm25: aqi * 0.19, pm10: aqi * 0.45, no2: aqi * 0.9,
         o3: (140 - aqi).clamp(30, 120).toDouble(), source: 'Open-Meteo',
       );
     }).toList();
+  }
+
+  // ── Alertes + notifications push ──────────────────────────────────────────
+  Future<void> _checkAndTriggerAlerts() async {
+    final aqi  = _data.aqi;
+    final pm25 = _data.pm25;
+    final now  = DateTime.now().toIso8601String();
+    final entries = <Map<String, dynamic>>[];
+
+    if ((_alerts['aqi_50']  ?? false) && aqi > 50) {
+      entries.add({'type': 'aqi_50', 'aqi': aqi, 'station': _data.stationName, 'time': now});
+      unawaited(_sendNotification(
+        '💛 AirPulse — Qualité modérée',
+        'AQI $aqi à ${_data.stationName}. Attention pour les personnes sensibles.',
+      ));
+    }
+    if ((_alerts['aqi_100'] ?? true) && aqi > 100) {
+      entries.add({'type': 'aqi_100', 'aqi': aqi, 'station': _data.stationName, 'time': now});
+      unawaited(_sendNotification(
+        '🔴 AirPulse — Qualité mauvaise',
+        'AQI $aqi à ${_data.stationName}. Évitez les activités extérieures.',
+      ));
+    }
+    if ((_alerts['pm25_15'] ?? true) && pm25 > 15) {
+      entries.add({'type': 'pm25_15', 'pm25': pm25, 'station': _data.stationName, 'time': now});
+    }
+    // Alerte seuil personnel
+    if (aqi > _personalThreshold) {
+      unawaited(_sendNotification(
+        '⚠️ AirPulse — Seuil personnel dépassé',
+        'AQI $aqi dépasse votre seuil de ${_personalThreshold.toInt()} à ${_data.stationName}.',
+      ));
+    }
+
+    if (entries.isNotEmpty) {
+      _alertHistory = [...entries, ..._alertHistory].take(50).toList();
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('alert_history', jsonEncode(_alertHistory));
+      } catch (e) { debugPrint('AirPulse: alertHistory: $e'); }
+      notifyListeners();
+    }
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -302,7 +443,7 @@ class AppProvider extends ChangeNotifier {
     return d[((deg + 11.25) / 22.5).floor() % 16];
   }
 
-  // ── Alertes ────────────────────────────────────────────────────────────────
+  // ── Setters ────────────────────────────────────────────────────────────────
   Future<void> toggleAlert(String id) async {
     _alerts[id] = !(_alerts[id] ?? false); notifyListeners();
     try { final p = await SharedPreferences.getInstance(); await p.setBool('alert_$id', _alerts[id]!); }
@@ -328,18 +469,4 @@ class AppProvider extends ChangeNotifier {
   }
 
   void clearError() { _error = null; notifyListeners(); }
-
-  Future<void> _checkAndTriggerAlerts() async {
-    final aqi = _data.aqi; final pm25 = _data.pm25;
-    final now = DateTime.now().toIso8601String();
-    final entries = <Map<String, dynamic>>[];
-    if ((_alerts['aqi_50']  ?? false) && aqi  > 50)  entries.add({'type': 'aqi_50',  'aqi': aqi,   'station': _data.stationName, 'time': now});
-    if ((_alerts['aqi_100'] ?? true)  && aqi  > 100) entries.add({'type': 'aqi_100', 'aqi': aqi,   'station': _data.stationName, 'time': now});
-    if ((_alerts['pm25_15'] ?? true)  && pm25 > 15)  entries.add({'type': 'pm25_15', 'pm25': pm25, 'station': _data.stationName, 'time': now});
-    if (entries.isNotEmpty) {
-      _alertHistory = [...entries, ..._alertHistory].take(50).toList();
-      try { final p = await SharedPreferences.getInstance(); await p.setString('alert_history', jsonEncode(_alertHistory)); }
-      catch (e) { debugPrint('AirPulse: alertHistory: $e'); }
-    }
-  }
 }

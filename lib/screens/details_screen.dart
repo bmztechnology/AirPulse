@@ -97,6 +97,10 @@ class DetailsScreen extends StatelessWidget {
             SliverToBoxAdapter(child: SectionHeader(title: l.dataSources)),
             SliverToBoxAdapter(child: const _DataSources()),
 
+            // Historique 7 jours
+            SliverToBoxAdapter(child: SectionHeader(title: l.historyTitle)),
+            SliverToBoxAdapter(child: _AqiHistory(history: ap.aqiHistory, l: l)),
+
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
@@ -416,6 +420,95 @@ class _DataSources extends StatelessWidget {
             ),
           ]),
         ); }).toList(),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Historique AQI 7 jours
+// ─────────────────────────────────────────────────────────────────────────────
+class _AqiHistory extends StatelessWidget {
+  final List<Map<String, dynamic>> history;
+  final AppLocalizations l;
+  const _AqiHistory({required this.history, required this.l});
+
+  @override
+  Widget build(BuildContext context) {
+    if (history.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Text(l.historyEmpty,
+            style: const TextStyle(fontSize: 13, color: AppColors.ink3),
+            textAlign: TextAlign.center),
+      );
+    }
+
+    // Regrouper par jour et calculer la moyenne AQI
+    final Map<String, List<int>> byDay = {};
+    for (final e in history) {
+      final t = DateTime.tryParse(e['time'] as String? ?? '');
+      if (t == null) continue;
+      final day = '${t.year}-${t.month.toString().padLeft(2,'0')}-${t.day.toString().padLeft(2,'0')}';
+      byDay.putIfAbsent(day, () => []).add((e['aqi'] as num? ?? 0).toInt());
+    }
+
+    final days = byDay.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: days.take(7).toList().asMap().entries.map((entry) {
+          final i   = entry.key;
+          final day = entry.value.key;
+          final aqis = entry.value.value;
+          final avg = aqis.reduce((a, b) => a + b) ~/ aqis.length;
+          final dt  = DateTime.parse(day);
+          final label = i == 0 ? "Aujourd'hui"
+              : i == 1 ? 'Hier'
+              : '${dt.day}/${dt.month}';
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(
+                color: i == 0 ? Colors.transparent : AppColors.border)),
+            ),
+            child: Row(children: [
+              SizedBox(width: 80,
+                child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink))),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: (avg / 300).clamp(0.0, 1.0),
+                    backgroundColor: AppColors.cream2,
+                    valueColor: AlwaysStoppedAnimation(aqiColor(avg)),
+                    minHeight: 6,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text('AQI $avg',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                    color: aqiColor(avg), fontFamily: 'DMMono')),
+              const SizedBox(width: 6),
+              Text('(${aqis.length} mesures)',
+                style: const TextStyle(fontSize: 10, color: AppColors.ink3)),
+            ]),
+          );
+        }).toList(),
       ),
     );
   }

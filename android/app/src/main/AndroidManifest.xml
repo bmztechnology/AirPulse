@@ -10,6 +10,8 @@
 
     <!-- Vibration UI légère — faible risque -->
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <!-- Fonctionnalités optionnelles — required="false" évite l'exclusion sur appareils sans capteur -->
     <uses-feature android:name="android.hardware.screen.portrait"  android:required="false"/>

@@ -182,5 +182,7 @@
   "tipOutdoorUnrestricted": "أنشطة خارجية بلا قيود.",
   "tipBestWindow": "أفضل وقت: 06–09 صباحاً و 20–22 مساءً.",
   "tipMaskNotNeeded": "قناع FFP2 غير ضروري في هذا المستوى.",
-  "alertNoHistory": "لم يتم تشغيل أي تنبيهات بعد."
+  "alertNoHistory": "لم يتم تشغيل أي تنبيهات بعد.",
+  "historyTitle": "سجل AQI لـ 7 أيام",
+  "historyEmpty": "لا يوجد سجل بعد — قم بالتحديث لتسجيل أول قياس."
 }
