@@ -227,7 +227,7 @@ class SettingsRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
+          border: Border(top: BorderSide(color: AppColors.border, width: 1)),
         ),
         child: Row(
           children: [

@@ -181,5 +181,6 @@
   "tipGoodConditions": "条件良好。推荐{profile}外出。",
   "tipOutdoorUnrestricted": "户外活动无限制。",
   "tipBestWindow": "最佳时段：06h–09h 和 20h–22h。",
-  "tipMaskNotNeeded": "该水平下无需FFP2口罩。"
+  "tipMaskNotNeeded": "该水平下无需FFP2口罩。",
+  "alertNoHistory": "暂无触发的警报。"
 }

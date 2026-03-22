@@ -181,5 +181,6 @@
   "tipGoodConditions": "Gute Bedingungen. {profile} Ausflug empfohlen.",
   "tipOutdoorUnrestricted": "Außenaktivitäten ohne Einschränkungen.",
   "tipBestWindow": "Beste Zeit: 06–09 Uhr und 20–22 Uhr.",
-  "tipMaskNotNeeded": "FFP2-Maske bei diesem Niveau nicht nötig."
+  "tipMaskNotNeeded": "FFP2-Maske bei diesem Niveau nicht nötig.",
+  "alertNoHistory": "Noch keine Alarme ausgelöst."
 }

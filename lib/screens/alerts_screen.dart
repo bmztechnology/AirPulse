@@ -22,29 +22,31 @@ class AlertsScreen extends StatelessWidget {
       (id: 'pollen',  icon: '🌸', label: l.alertPollen,            desc: l.alertPollenDesc),
     ];
 
-    // FIX-BUG-11: alert history labels now localised via ARB.
-    // Timestamps kept relative (computed at runtime) to avoid hardcoded French.
-    final now = DateTime.now();
-    final history = [
-      (
-        color: AppColors.aqiGreen,
-        icon: '✅',
-        text: '${l.statusGood} · Paris Centre',
-        time: _relativeTime(now.subtract(const Duration(hours: 2)), l),
-      ),
-      (
-        color: AppColors.aqiYellow,
-        icon: '⚠️',
-        text: '${l.statusModerate} · Périphérique Est AQI 78',
-        time: _relativeTime(now.subtract(const Duration(hours: 18)), l),
-      ),
-      (
-        color: AppColors.aqiRed,
-        icon: '🚨',
-        text: '${l.statusUnhealthySensitive} · Aubervilliers AQI 110',
-        time: _relativeTime(now.subtract(const Duration(hours: 48)), l),
-      ),
-    ];
+    // Historique réel depuis le provider (persisté en SharedPreferences)
+    final rawHistory = ap.alertHistory;
+    final history = rawHistory.isEmpty
+        ? <({Color color, String icon, String text, String time})>[]
+        : rawHistory.map((h) {
+            final type = h['type'] as String? ?? '';
+            final station = h['station'] as String? ?? '';
+            final timeStr = h['time'] as String? ?? '';
+            final dt = DateTime.tryParse(timeStr) ?? DateTime.now();
+            String text;
+            Color color;
+            String icon;
+            if (type == 'aqi_50') {
+              text = '${l.statusModerate} · $station AQI ${h['aqi']}';
+              color = AppColors.aqiYellow; icon = '⚠️';
+            } else if (type == 'aqi_100') {
+              text = '${l.statusUnhealthySensitive} · $station AQI ${h['aqi']}';
+              color = AppColors.aqiRed; icon = '🚨';
+            } else {
+              text = 'PM2.5 ${(h['pm25'] as num?)?.toStringAsFixed(1)} μg/m³ · $station';
+              color = AppColors.aqiOrange; icon = '💨';
+            }
+            return (color: color, icon: icon, text: text,
+                time: _relativeTime(dt, l));
+          }).toList();
 
     return Scaffold(
       backgroundColor: AppColors.cream,
@@ -82,14 +84,26 @@ class AlertsScreen extends StatelessWidget {
                   border: Border.all(color: AppColors.border),
                 ),
                 child: Column(
-                  children: history
-                      .map((h) => Container(
+                  children: history.isEmpty
+                    ? [
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Text(
+                            l.alertNoHistory,
+                            style: const TextStyle(fontSize: 13, color: AppColors.ink3),
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+                      ]
+                    : history.asMap().entries.map((e) {
+                        final h = e.value;
+                        return Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
                                 border: Border(
                                     top: BorderSide(
-                                        color: h == history.first
+                                        color: e.key == 0
                                             ? Colors.transparent
                                             : AppColors.border))),
                             child: Row(children: [
@@ -120,9 +134,8 @@ class AlertsScreen extends StatelessWidget {
                                             fontSize: 10,
                                             color: AppColors.ink3)),
                                   ])),
-                            ]),
-                          ))
-                      .toList(),
+                            ]));
+                      }).toList(),
                 ),
               ),
             ),

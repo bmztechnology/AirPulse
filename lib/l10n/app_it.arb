@@ -181,5 +181,6 @@
   "tipGoodConditions": "Buone condizioni. Uscita {profile} raccomandata.",
   "tipOutdoorUnrestricted": "Attività all'aperto senza restrizioni.",
   "tipBestWindow": "Finestra ottimale: 06h–09h e 20h–22h.",
-  "tipMaskNotNeeded": "Mascherina FFP2 non necessaria a questo livello."
+  "tipMaskNotNeeded": "Mascherina FFP2 non necessaria a questo livello.",
+  "alertNoHistory": "Nessun avviso ancora attivato."
 }

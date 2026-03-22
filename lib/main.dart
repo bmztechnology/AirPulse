@@ -19,7 +19,8 @@ void main() async {
   ]);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
+    statusBarIconBrightness: Brightness.dark,   // light theme default
+    statusBarBrightness: Brightness.light,       // iOS
   ));
   runApp(
     ChangeNotifierProvider(
@@ -41,6 +42,12 @@ class _AirPulseAppState extends State<AirPulseApp> {
   @override
   Widget build(BuildContext context) {
     final ap = context.watch<AppProvider>();
+    // Sync status bar icon brightness with theme
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: ap.darkMode ? Brightness.light : Brightness.dark,
+      statusBarBrightness: ap.darkMode ? Brightness.dark : Brightness.light,
+    ));
     return MaterialApp(
       title: 'AirPulse',
       debugShowCheckedModeBanner: false,

@@ -1,4 +1,5 @@
 // lib/providers/app_provider.dart
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +40,10 @@ class AppProvider extends ChangeNotifier {
 
   List<AqiStation> _stations = AqiStation.mockStations();
   List<AqiStation> get stations => _stations;
+
+  // Historique des alertes déclenchées — persisté en JSON dans SharedPreferences
+  List<Map<String, dynamic>> _alertHistory = [];
+  List<Map<String, dynamic>> get alertHistory => List.unmodifiable(_alertHistory);
 
   Map<String, bool> _alerts = {
     'aqi_50': false,
@@ -87,6 +92,15 @@ class AppProvider extends ChangeNotifier {
       for (final key in _alerts.keys.toList()) {
         final saved = prefs.getBool('alert_$key');
         if (saved != null) _alerts[key] = saved;
+      }
+
+      // Charger l'historique des alertes
+      final histJson = prefs.getString('alert_history');
+      if (histJson != null) {
+        try {
+          final decoded = jsonDecode(histJson) as List;
+          _alertHistory = decoded.cast<Map<String, dynamic>>();
+        } catch (_) {}
       }
     } catch (e) {
       debugPrint('AirPulse: prefs load error: $e');
@@ -190,6 +204,7 @@ class AppProvider extends ChangeNotifier {
     } finally {
       _initialized = true;
       _loading = false;
+      unawaited(_checkAndTriggerAlerts());
       notifyListeners();
     }
   }
@@ -456,5 +471,33 @@ class AppProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  // ── Historique alertes ────────────────────────────────────────────────────
+  Future<void> _checkAndTriggerAlerts() async {
+    final aqi = _data.aqi;
+    final pm25 = _data.pm25;
+    final now = DateTime.now().toIso8601String();
+    final newEntries = <Map<String, dynamic>>[];
+
+    if ((_alerts['aqi_50'] ?? false) && aqi > 50) {
+      newEntries.add({'type': 'aqi_50', 'aqi': aqi, 'station': _data.stationName, 'time': now});
+    }
+    if ((_alerts['aqi_100'] ?? true) && aqi > 100) {
+      newEntries.add({'type': 'aqi_100', 'aqi': aqi, 'station': _data.stationName, 'time': now});
+    }
+    if ((_alerts['pm25_15'] ?? true) && pm25 > 15) {
+      newEntries.add({'type': 'pm25_15', 'pm25': pm25, 'station': _data.stationName, 'time': now});
+    }
+
+    if (newEntries.isNotEmpty) {
+      _alertHistory = [...newEntries, ..._alertHistory].take(50).toList();
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('alert_history', jsonEncode(_alertHistory));
+      } catch (e) {
+        debugPrint('AirPulse: saveAlertHistory error: $e');
+      }
+    }
   }
 }

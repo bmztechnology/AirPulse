@@ -181,5 +181,6 @@
   "tipGoodConditions": "ظروف جيدة. يُوصى بالخروج {profile}.",
   "tipOutdoorUnrestricted": "أنشطة خارجية بلا قيود.",
   "tipBestWindow": "أفضل وقت: 06–09 صباحاً و 20–22 مساءً.",
-  "tipMaskNotNeeded": "قناع FFP2 غير ضروري في هذا المستوى."
+  "tipMaskNotNeeded": "قناع FFP2 غير ضروري في هذا المستوى.",
+  "alertNoHistory": "لم يتم تشغيل أي تنبيهات بعد."
 }

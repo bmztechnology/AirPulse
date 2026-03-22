@@ -249,5 +249,6 @@
   },
   "tipOutdoorUnrestricted": "Outdoor activities without restriction.",
   "tipBestWindow": "Best window: 06h–09h and 20h–22h.",
-  "tipMaskNotNeeded": "FFP2 mask not required at this level."
+  "tipMaskNotNeeded": "FFP2 mask not required at this level.",
+  "alertNoHistory": "No alerts triggered yet."
 }

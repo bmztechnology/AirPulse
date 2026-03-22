@@ -114,9 +114,13 @@ class _Pm25Chart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (forecast.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final spots = forecast.asMap().entries.map((e) =>
       FlSpot(e.key.toDouble(), e.value.pm25)).toList();
-    final maxY = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b) * 1.3;
+    final maxVal = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
+    final maxY = (maxVal * 1.3).clamp(20.0, double.infinity);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -403,10 +407,12 @@ class _DataSources extends StatelessWidget {
           child: Row(children: [
             Text(s.icon, style: const TextStyle(fontSize: 18)),
             const SizedBox(width: 12),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(s.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink)),
-              Text(s.desc, style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
-            ]),
+            Flexible(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(s.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink)),
+                Text(s.desc, style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
+              ]),
+            ),
           ]),
         ); }).toList(),
       ),

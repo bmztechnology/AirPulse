@@ -181,5 +181,6 @@
   "tipGoodConditions": "良好な条件です。{profile}の外出を推奨します。",
   "tipOutdoorUnrestricted": "屋外活動に制限なし。",
   "tipBestWindow": "最適な時間帯: 06時〜09時および20時〜22時。",
-  "tipMaskNotNeeded": "このレベルではFFP2マスクは不要です。"
+  "tipMaskNotNeeded": "このレベルではFFP2マスクは不要です。",
+  "alertNoHistory": "まだアラートはありません。"
 }

@@ -20,7 +20,7 @@ class HomeScreen extends StatelessWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(ap.error!),
-        backgroundColor: const Color(0xFFC41A1A),
+        backgroundColor: AppColors.aqiRed,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 4),

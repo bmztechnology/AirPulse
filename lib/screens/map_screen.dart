@@ -238,15 +238,15 @@ class _MapScreenState extends State<MapScreen> {
                       borderRadius: BorderRadius.circular(4),
                       child: Container(
                         height: 8,
-                        decoration: const BoxDecoration(
-                          gradient: const LinearGradient(colors: [
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [
                             AppColors.gradientGreen,
                             AppColors.gradientYellow,
                             AppColors.gradientOrange,
                             AppColors.aqiRed,
                             AppColors.gradientPurple,
                             AppColors.gradientMaroon,
-                          ]), // FIX-MINOR-06
+                          ]),
                         ),
                       ),
                     ),
