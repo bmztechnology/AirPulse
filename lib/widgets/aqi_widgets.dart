@@ -125,9 +125,12 @@ class PollutantCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = aqiColor(aqi);
     final bg = aqiBgColor(aqi);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
+    return Semantics(
+      button: onTap != null,
+      label: '$label: $value $unit',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.cream,
@@ -163,8 +166,8 @@ class PollutantCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ); // GestureDetector
+  } // Semantics
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

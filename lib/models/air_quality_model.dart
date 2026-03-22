@@ -4,6 +4,16 @@ enum AqiStatus { good, moderate, unhealthySensitive, unhealthy, veryUnhealthy, h
 
 enum UserProfile { cyclist, athlete, sick, normal, child, elderly }
 
+/// M-01 fix: logique AQI extraite ici — utilisée par AirQualityData ET AqiStation.
+AqiStatus aqiStatusFrom(int aqi) {
+  if (aqi <= 50)  return AqiStatus.good;
+  if (aqi <= 100) return AqiStatus.moderate;
+  if (aqi <= 150) return AqiStatus.unhealthySensitive;
+  if (aqi <= 200) return AqiStatus.unhealthy;
+  if (aqi <= 300) return AqiStatus.veryUnhealthy;
+  return AqiStatus.hazardous;
+}
+
 class AirQualityData {
   final int aqi;
   final double pm25;
@@ -46,14 +56,7 @@ class AirQualityData {
     required this.forecast,
   });
 
-  AqiStatus get status {
-    if (aqi <= 50)  return AqiStatus.good;
-    if (aqi <= 100) return AqiStatus.moderate;
-    if (aqi <= 150) return AqiStatus.unhealthySensitive;
-    if (aqi <= 200) return AqiStatus.unhealthy;
-    if (aqi <= 300) return AqiStatus.veryUnhealthy;
-    return AqiStatus.hazardous;
-  }
+  AqiStatus get status => aqiStatusFrom(aqi);
 
   factory AirQualityData.mock() => AirQualityData(
     aqi: 42,
@@ -176,14 +179,7 @@ class AqiStation {
     this.windKmh = 12.0, // default; replaced by real API data
   });
 
-  AqiStatus get status {
-    if (aqi <= 50)  return AqiStatus.good;
-    if (aqi <= 100) return AqiStatus.moderate;
-    if (aqi <= 150) return AqiStatus.unhealthySensitive;
-    if (aqi <= 200) return AqiStatus.unhealthy;
-    if (aqi <= 300) return AqiStatus.veryUnhealthy;
-    return AqiStatus.hazardous;
-  }
+  AqiStatus get status => aqiStatusFrom(aqi);
 
   static List<AqiStation> mockStations() => const [
     AqiStation(name: 'Paris Centre',        lat: 48.856, lng: 2.352,  aqi: 42,  pm25: 8,  pm10: 19, no2: 38, o3: 61, source: 'AirParif', windKmh: 12.0),

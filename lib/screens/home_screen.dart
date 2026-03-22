@@ -12,6 +12,27 @@ import '../navigation/app_shell.dart' show AppShellState; // FIX-CRITICAL-01: no
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  // L-08 fix: afficher un snackbar quand AppProvider._error est non-null
+  void _listenForErrors(BuildContext context, AppProvider ap) {
+    if (ap.error == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ap.error!),
+        backgroundColor: const Color(0xFFC41A1A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'Réessayer',
+          textColor: Colors.white,
+          onPressed: () => ap.refreshLocation(),
+        ),
+      ));
+      ap.clearError();
+    });
+  }
+
   String _profileEmoji(UserProfile p) => switch (p) {
         UserProfile.cyclist => '🚴',
         UserProfile.athlete => '🏃',
@@ -75,6 +96,14 @@ class HomeScreen extends StatelessWidget {
     final ap = context.watch<AppProvider>();
     final l = AppLocalizations.of(context);
     final d = ap.data;
+
+    _listenForErrors(context, ap);
+
+    // Premier chargement automatique au démarrage
+    if (!ap.loading && ap.data.stationSource == 'AirParif' &&
+        ap.locationName == 'Localisation en cours…') {
+      WidgetsBinding.instance.addPostFrameCallback((_) => ap.refreshLocation());
+    }
 
     return Scaffold(
       backgroundColor: AppColors.cream,
