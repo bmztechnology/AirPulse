@@ -38,7 +38,7 @@ class AppProvider extends ChangeNotifier {
   double? get lastLat => _lastLat;
   double? get lastLng => _lastLng;
 
-  List<AqiStation> _stations = AqiStation.mockStations();
+  List<AqiStation> _stations = [];
   List<AqiStation> get stations => _stations;
 
   List<Map<String, dynamic>> _alertHistory = [];
