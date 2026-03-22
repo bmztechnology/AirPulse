@@ -383,9 +383,15 @@ class HomeScreen extends StatelessWidget {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
                 sliver: SliverList(
-                  delegate: SliverChildListDelegate(
-                    _buildDynamicInsights(d, l),
-                  ),
+                  delegate: SliverChildListDelegate([
+                    // Si clé IA présente → carte IA unifiée
+                    if (ap.hasAiKey) ...[
+                      _AiInsightCard(ap: ap, l: l),
+                    ] else ...[
+                      // Fallback : 4 cartes statiques
+                      ..._buildDynamicInsights(d, l),
+                    ],
+                  ]),
                 ),
               ),
             ],
@@ -397,7 +403,62 @@ class HomeScreen extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FIX-BUG-1: _IconBtn — was missing entirely (compile error).
+// Carte IA unifiée — remplace les 4 InsightCards quand la clé Groq est active
+// ─────────────────────────────────────────────────────────────────────────────
+class _AiInsightCard extends StatelessWidget {
+  final AppProvider ap;
+  final AppLocalizations l;
+  const _AiInsightCard({required this.ap, required this.l});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [BoxShadow(color: AppColors.accent.withValues(alpha: 0.06),
+            blurRadius: 12)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Text('🤖', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
+            Text(l.aiInsightCard,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                  color: AppColors.ink)),
+            const Spacer(),
+            if (ap.aiLoading)
+              const SizedBox(width: 14, height: 14,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: AppColors.accent)),
+            const SizedBox(width: 4),
+            Text('LLaMA 3.3',
+              style: const TextStyle(fontSize: 9, color: AppColors.ink3,
+                  fontFamily: 'DMMono')),
+          ]),
+          const SizedBox(height: 12),
+          if (ap.aiLoading && ap.aiInsight == null)
+            Text(l.aiInsightLoading,
+              style: const TextStyle(fontSize: 13, color: AppColors.ink3,
+                  fontStyle: FontStyle.italic))
+          else if (ap.aiInsight != null)
+            Text(ap.aiInsight!,
+              style: const TextStyle(fontSize: 13, color: AppColors.ink2,
+                  height: 1.6))
+          else
+            Text(l.aiInsightFallback,
+              style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
+        ],
+      ),
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 class _IconBtn extends StatelessWidget {
   final String icon;

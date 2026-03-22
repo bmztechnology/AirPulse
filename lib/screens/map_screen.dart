@@ -8,6 +8,7 @@ import '../models/air_quality_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/aqi_widgets.dart';
 import '../l10n/app_localizations.dart';
+import '../services/ai_insight_service.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -610,65 +611,16 @@ class _MapScreenState extends State<MapScreen> {
     if (!mounted) return;
     final color = aqiColor(displayAqi);
     final bg    = aqiBgColor(displayAqi);
+    final ap    = ctx.read<AppProvider>();
     showModalBottomSheet(
       context: ctx,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.cream,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Expanded(child: Text('📍 ${s.name}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700,
-                    color: AppColors.ink))),
-              AqiBadge(aqi: displayAqi, fontSize: 13),
-            ]),
-            const SizedBox(height: 4),
-            Text('📡 ${s.source}',
-              style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
-            if (_forecastHour > 0) ...[
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: bg,
-                    borderRadius: BorderRadius.circular(8)),
-                child: Text(l.mapForecastIn(_forecastHour),
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                      color: color)),
-              ),
-            ],
-            const SizedBox(height: 14),
-            // Conseil selon AQI
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: bg,
-                  borderRadius: BorderRadius.circular(12)),
-              child: Text(_aqiAdvice(displayAqi, l),
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                    color: color)),
-            ),
-            const SizedBox(height: 14),
-            Wrap(spacing: 10, runSpacing: 8, children: [
-              _pollStat('PM2.5', '${s.pm25.toStringAsFixed(0)} μg'),
-              _pollStat('PM10',  '${s.pm10.toStringAsFixed(0)} μg'),
-              _pollStat('NO₂',   '${s.no2.toStringAsFixed(0)} μg'),
-              _pollStat('O₃',    '${s.o3.toStringAsFixed(0)} μg'),
-            ]),
-          ],
-        ),
+      builder: (_) => _StationPopup(
+        station: s, displayAqi: displayAqi,
+        forecastHour: _forecastHour, l: l, ap: ap,
       ),
     );
   }
-
   String _aqiAdvice(int aqi, AppLocalizations l) {
     if (aqi <= 50)  return l.mapAdviceGood;
     if (aqi <= 100) return l.mapAdviceModerate;
@@ -744,4 +696,143 @@ class _StationRow extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Popup station avec conseil IA
+// ─────────────────────────────────────────────────────────────────────────────
+class _StationPopup extends StatefulWidget {
+  final AqiStation station;
+  final int displayAqi;
+  final int forecastHour;
+  final AppLocalizations l;
+  final AppProvider ap;
+  const _StationPopup({
+    required this.station, required this.displayAqi,
+    required this.forecastHour, required this.l, required this.ap,
+  });
+  @override
+  State<_StationPopup> createState() => _StationPopupState();
+}
+
+class _StationPopupState extends State<_StationPopup> {
+  String? _aiAdvice;
+  bool    _aiLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAiAdvice();
+  }
+
+  Future<void> _loadAiAdvice() async {
+    if (!widget.ap.hasAiKey) return;
+    setState(() => _aiLoading = true);
+    final advice = await AiInsightService.getMapAdvice(
+      aqi: widget.displayAqi,
+      profile: widget.ap.profile,
+      stationName: widget.station.name,
+      lang: widget.ap.locale.languageCode,
+    );
+    if (mounted) setState(() { _aiAdvice = advice; _aiLoading = false; });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s   = widget.station;
+    final aqi = widget.displayAqi;
+    final l   = widget.l;
+    final color = aqiColor(aqi);
+    final bg    = aqiBgColor(aqi);
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Expanded(child: Text('📍 ${s.name}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700,
+                  color: AppColors.ink))),
+            AqiBadge(aqi: aqi, fontSize: 13),
+          ]),
+          const SizedBox(height: 4),
+          Text('📡 ${s.source}',
+            style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
+          if (widget.forecastHour > 0) ...[
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(color: bg,
+                  borderRadius: BorderRadius.circular(8)),
+              child: Text(l.mapForecastIn(widget.forecastHour),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+                    color: color)),
+            ),
+          ],
+          const SizedBox(height: 12),
+          // Conseil IA ou conseil statique
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: bg,
+                borderRadius: BorderRadius.circular(12)),
+            child: _aiLoading
+                ? Row(children: [
+                    const SizedBox(width: 12, height: 12,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: AppColors.accent)),
+                    const SizedBox(width: 8),
+                    Text(l.aiInsightLoading,
+                      style: const TextStyle(fontSize: 11,
+                          color: AppColors.ink3, fontStyle: FontStyle.italic)),
+                  ])
+                : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    if (widget.ap.hasAiKey && _aiAdvice != null)
+                      const Text('🤖 ', style: TextStyle(fontSize: 13)),
+                    Expanded(child: Text(
+                      _aiAdvice ?? _staticAdvice(aqi, l),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                          color: color))),
+                  ]),
+          ),
+          const SizedBox(height: 14),
+          Wrap(spacing: 10, runSpacing: 8, children: [
+            _stat('PM2.5', '${s.pm25.toStringAsFixed(0)} μg'),
+            _stat('PM10',  '${s.pm10.toStringAsFixed(0)} μg'),
+            _stat('NO₂',   '${s.no2.toStringAsFixed(0)} μg'),
+            _stat('O₃',    '${s.o3.toStringAsFixed(0)} μg'),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  String _staticAdvice(int aqi, AppLocalizations l) {
+    if (aqi <= 50)  return l.mapAdviceGood;
+    if (aqi <= 100) return l.mapAdviceModerate;
+    if (aqi <= 150) return l.mapAdviceUnhealthy;
+    if (aqi <= 200) return l.mapAdvicePoor;
+    return l.mapAdviceDangerous;
+  }
+
+  Widget _stat(String label, String value) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(color: AppColors.cream2,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border)),
+    child: Column(children: [
+      Text(value, style: const TextStyle(fontSize: 13,
+          fontWeight: FontWeight.w700, color: AppColors.ink, fontFamily: 'DMMono')),
+      Text(label, style: const TextStyle(fontSize: 9,
+          color: AppColors.ink3, fontWeight: FontWeight.w600)),
+    ]),
+  );
 }
