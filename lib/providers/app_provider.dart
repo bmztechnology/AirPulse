@@ -240,45 +240,55 @@ class AppProvider extends ChangeNotifier {
     );
   }
 
-  // ── WAQI IP-geoloc fallback ────────────────────────────────────────────────
+  // ── Pas de GPS → erreur explicite plutôt que géoloc IP fausse ────────────────
+  // Le fallback /feed/here utilise l'IP du serveur réseau (CDN/proxy) et retourne
+  // n'importe quelle ville dans le monde. On force l'utilisateur à accorder le GPS.
   Future<void> _fetchWaqiHere() async {
-    final uri = Uri.parse('https://api.waqi.info/feed/here/?token=$_kWaqiToken');
-    final resp = await http.get(uri).timeout(const Duration(seconds: 10));
-    if (resp.statusCode != 200) throw Exception('WAQI HTTP ${resp.statusCode}');
+    // Essayer quand même pour avoir des données AQI approximatives,
+    // mais signaler clairement que la localisation est basée sur l'IP réseau
+    try {
+      final uri = Uri.parse('https://api.waqi.info/feed/here/?token=$_kWaqiToken');
+      final resp = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (resp.statusCode != 200) throw Exception('WAQI HTTP ${resp.statusCode}');
 
-    final body = jsonDecode(resp.body) as Map<String, dynamic>;
-    if (body['status'] != 'ok') throw Exception('WAQI: ${body['status']}');
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      if (body['status'] != 'ok') throw Exception('WAQI: ${body['status']}');
 
-    final d = body['data'] as Map<String, dynamic>;
-    final iaqi = d['iaqi'] as Map<String, dynamic>? ?? {};
-    final cityData = d['city'] as Map<String, dynamic>? ?? {};
-    final cityName = cityData['name'] as String? ?? 'Position IP';
-    final geo = (cityData['geo'] as List?)?.cast<num>() ?? [];
-    final lat = geo.isNotEmpty ? geo[0].toDouble() : 48.856;
-    final lng = geo.length > 1 ? geo[1].toDouble() : 2.352;
+      final d = body['data'] as Map<String, dynamic>;
+      final iaqi = d['iaqi'] as Map<String, dynamic>? ?? {};
+      final cityData = d['city'] as Map<String, dynamic>? ?? {};
+      final geo = (cityData['geo'] as List?)?.cast<num>() ?? [];
+      final lat = geo.isNotEmpty ? geo[0].toDouble() : 48.856;
+      final lng = geo.length > 1 ? geo[1].toDouble() : 2.352;
 
-    double v(String key) => ((iaqi[key] as Map?)?['v'] as num?)?.toDouble() ?? 0.0;
+      double v(String key) => ((iaqi[key] as Map?)?['v'] as num?)?.toDouble() ?? 0.0;
 
-    _lastLat = lat;
-    _lastLng = lng;
-    _locationName = cityName;
-    _data = AirQualityData(
-      aqi: (d['aqi'] as num).toInt(),
-      pm25: v('pm25'), pm10: v('pm10'), no2: v('no2'),
-      o3: v('o3'), so2: v('so2'), co: v('co'),
-      updatedAt: DateTime.now(),
-      stationName: cityName,
-      stationSource: 'WAQI (IP)',
-      lat: lat, lng: lng,
-      weather: WeatherData.mock(),
-      pollen: PollenData.mock(),
-      forecast: HourlyForecast.mockList(),
-    );
-    // Après _fetchWaqiHere, enrichir avec météo + stations en parallèle
-    await Future.wait([
-      _fetchOpenMeteo(lat, lng),
-      _fetchNearbyStations(lat, lng),
-    ]);
+      _lastLat = lat;
+      _lastLng = lng;
+      // Nom de ville avec avertissement clair que c'est la position réseau
+      _locationName = '⚠️ GPS requis — position approximative';
+      _data = AirQualityData(
+        aqi: (d['aqi'] as num).toInt(),
+        pm25: v('pm25'), pm10: v('pm10'), no2: v('no2'),
+        o3: v('o3'), so2: v('so2'), co: v('co'),
+        updatedAt: DateTime.now(),
+        stationName: 'Position réseau (imprécise)',
+        stationSource: 'WAQI',
+        lat: lat, lng: lng,
+        weather: WeatherData.mock(),
+        pollen: PollenData.mock(),
+        forecast: HourlyForecast.mockList(),
+      );
+
+      await Future.wait([
+        _fetchOpenMeteo(lat, lng),
+        _fetchNearbyStations(lat, lng),
+      ]);
+    } catch (e) {
+      debugPrint('AirPulse: _fetchWaqiHere error: $e');
+      _locationName = 'Position inconnue';
+      _error = 'Activez le GPS pour obtenir votre qualité d\'air réelle.';
+    }
   }
 
   // ── Open-Meteo ─────────────────────────────────────────────────────────────

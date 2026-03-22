@@ -222,7 +222,7 @@ class _MapScreenState extends State<MapScreen> {
 
             // ── AQI legend bar ───────────────────────────────────────────
             Container(
-              margin: const EdgeInsets.fromLTRB(16, -20, 16, 0),
+              margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: AppColors.cream.withValues(alpha: 0.95),

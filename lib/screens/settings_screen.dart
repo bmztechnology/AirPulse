@@ -154,15 +154,49 @@ class SettingsScreen extends StatelessWidget {
             _SectionLabel(label: l.settingsAbout),
             SliverToBoxAdapter(
               child: _SettingsGroup(children: [
-                SettingsRow(icon: 'ℹ️', label: l.settingsVersion,     desc: l.settingsVersionDesc),
-                SettingsRow(icon: '📖', label: l.settingsMethodology,  desc: l.settingsMethodologyDesc,
-                  trailing: const Text('›', style: TextStyle(fontSize: 16, color: AppColors.ink3))),
+                SettingsRow(icon: 'ℹ️', label: l.settingsVersion, desc: l.settingsVersionDesc),
+                SettingsRow(icon: '📖', label: l.settingsMethodology, desc: l.settingsMethodologyDesc,
+                  trailing: const Text('›', style: TextStyle(fontSize: 16, color: AppColors.ink3)),
+                  onTap: () => _showComingSoon(context, l.settingsMethodology)),
                 SettingsRow(icon: '🔒', label: l.settingsPrivacy,
-                  trailing: const Text('›', style: TextStyle(fontSize: 16, color: AppColors.ink3))),
+                  trailing: const Text('›', style: TextStyle(fontSize: 16, color: AppColors.ink3)),
+                  onTap: () => _showComingSoon(context, l.settingsPrivacy)),
               ]),
             ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showComingSoon(BuildContext context, String title) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 36, height: 4,
+              decoration: BoxDecoration(color: AppColors.cream3,
+                borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Text(title, style: const TextStyle(fontSize: 17,
+                fontWeight: FontWeight.w700, color: AppColors.ink)),
+            const SizedBox(height: 8),
+            const Text('Cette fonctionnalité sera disponible dans une prochaine version.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: AppColors.ink3, height: 1.5)),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -341,12 +375,15 @@ class _ProfileCard extends StatelessWidget {
           const SizedBox(height: 14),
           const Divider(color: AppColors.border, height: 1),
           const SizedBox(height: 12),
-          SettingsRow(icon: '🏃', label: l.settingsActivityType,     desc: l.settingsActivityTypeDesc,
-            trailing: const Text('›', style: TextStyle(color: AppColors.ink3, fontSize: 16))),
-          SettingsRow(icon: '🫁', label: l.settingsRespSensitivity,  desc: l.settingsRespSensitivityDesc,
-            trailing: const Text('›', style: TextStyle(color: AppColors.ink3, fontSize: 16))),
-          SettingsRow(icon: '💊', label: l.settingsMedical,           desc: l.settingsMedicalDesc,
-            trailing: const Text('›', style: TextStyle(color: AppColors.ink3, fontSize: 16))),
+          SettingsRow(icon: '🏃', label: l.settingsActivityType,    desc: l.settingsActivityTypeDesc,
+            trailing: const Text('›', style: TextStyle(color: AppColors.ink3, fontSize: 16)),
+            onTap: () => _showComingSoon(context, l.settingsActivityType)),
+          SettingsRow(icon: '🫁', label: l.settingsRespSensitivity, desc: l.settingsRespSensitivityDesc,
+            trailing: const Text('›', style: TextStyle(color: AppColors.ink3, fontSize: 16)),
+            onTap: () => _showComingSoon(context, l.settingsRespSensitivity)),
+          SettingsRow(icon: '💊', label: l.settingsMedical,          desc: l.settingsMedicalDesc,
+            trailing: const Text('›', style: TextStyle(color: AppColors.ink3, fontSize: 16)),
+            onTap: () => _showComingSoon(context, l.settingsMedical)),
         ],
       ),
     );
