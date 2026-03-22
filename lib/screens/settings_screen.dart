@@ -7,6 +7,39 @@ import '../theme/app_theme.dart';
 import '../widgets/aqi_widgets.dart';
 import '../l10n/app_localizations.dart';
 
+/// Fonction top-level — accessible depuis SettingsScreen ET _ProfileCard.
+void _showComingSoon(BuildContext context, String title) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_) => Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(width: 36, height: 4,
+            decoration: BoxDecoration(color: AppColors.cream3,
+              borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 20),
+          Text(title, style: const TextStyle(fontSize: 17,
+              fontWeight: FontWeight.w700, color: AppColors.ink)),
+          const SizedBox(height: 8),
+          const Text('Cette fonctionnalité sera disponible dans une prochaine version.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: AppColors.ink3, height: 1.5)),
+          const SizedBox(height: 20),
+        ],
+      ),
+    ),
+  );
+}
+
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -165,38 +198,6 @@ class SettingsScreen extends StatelessWidget {
             ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showComingSoon(BuildContext context, String title) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: AppColors.cream,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(width: 36, height: 4,
-              decoration: BoxDecoration(color: AppColors.cream3,
-                borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
-            Text(title, style: const TextStyle(fontSize: 17,
-                fontWeight: FontWeight.w700, color: AppColors.ink)),
-            const SizedBox(height: 8),
-            const Text('Cette fonctionnalité sera disponible dans une prochaine version.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: AppColors.ink3, height: 1.5)),
-            const SizedBox(height: 20),
           ],
         ),
       ),
