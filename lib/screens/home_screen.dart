@@ -116,14 +116,19 @@ class HomeScreen extends StatelessWidget {
       cardioText = 'NO₂ à ${no2.toStringAsFixed(0)} μg/m³ — seuil OMS dépassé. Les personnes cardiaques doivent éviter les zones de trafic.';
     }
 
-    // 🌿 Ozone
-    final String o3Text;
-    if (o3 <= 60) {
-      o3Text = 'O₃ à ${o3.toStringAsFixed(0)} μg/m³ — niveau faible. Pas de risque lié à l\'ozone.';
-    } else if (o3 <= 100) {
-      o3Text = 'O₃ à ${o3.toStringAsFixed(0)} μg/m³ — niveau modéré. Limitez les activités intenses en plein soleil.';
+    // 🌿 Pollen
+    final p = d.pollen;
+    final pollenLabels = ['Nul', 'Très faible', 'Faible', 'Modéré', 'Élevé', 'Très élevé'];
+    final pollenColors = [
+      '🟢', '🟢', '🟡', '🟠', '🔴', '🔴',
+    ];
+    final String pollenText;
+    if (p.total == 0 && p.grass == 0 && p.trees == 0) {
+      pollenText = 'Données pollen en cours de chargement…';
     } else {
-      o3Text = 'O₃ à ${o3.toStringAsFixed(0)} μg/m³ — niveau élevé. Évitez les efforts extérieurs en milieu de journée.';
+      final dominantLabel = pollenColors[p.total.clamp(0,5)];
+      pollenText = '$dominantLabel Pollen total : ${pollenLabels[p.total.clamp(0,5)]} (${p.total}/5)\n'
+          '🌾 Graminées ${p.grass}/5  🌳 Arbres ${p.trees}/5  🍄 Moisissures ${p.molds}/5';
     }
 
     // 🌤️ Météo & dispersion
@@ -135,7 +140,7 @@ class HomeScreen extends StatelessWidget {
     return [
       InsightCard(icon: '🫁', title: l.insightRespTitle,    text: respText),
       InsightCard(icon: '❤️', title: l.insightCardioTitle,  text: cardioText),
-      InsightCard(icon: '🌿', title: l.insightPollenTitle,  text: o3Text),
+      InsightCard(icon: '🌿', title: l.insightPollenTitle,  text: pollenText),
       InsightCard(icon: '🌤️', title: l.insightWeatherTitle, text: meteoText),
     ];
   }

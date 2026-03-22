@@ -246,7 +246,7 @@ class AppProvider extends ChangeNotifier {
     final no2  = c('nitrogen_dioxide').toDouble();
     final o3   = c('ozone').toDouble();
     final co   = c('carbon_monoxide').toDouble() / 1000;
-    final aqi  = _pm25ToAqi(pm25);
+    final aqi  = _compositeAqi(pm25: pm25, no2: no2, o3: o3, co: co);
 
     // Prévisions PM2.5 horaires
     final hourly = json['hourly'] as Map<String, dynamic>? ?? {};
@@ -436,6 +436,48 @@ class AppProvider extends ChangeNotifier {
       if (pm25 <= b.cH) return (((b.iH - b.iL) / (b.cH - b.cL)) * (pm25 - b.cL) + b.iL).round();
     }
     return 500;
+  }
+
+  // NO2 → sous-AQI EPA (μg/m³, breakpoints EPA)
+  int _no2ToAqi(double no2) {
+    const bp = [
+      (cL: 0.0,    cH: 53.0,   iL: 0,   iH: 50),
+      (cL: 54.0,   cH: 100.0,  iL: 51,  iH: 100),
+      (cL: 101.0,  cH: 360.0,  iL: 101, iH: 150),
+      (cL: 361.0,  cH: 649.0,  iL: 151, iH: 200),
+      (cL: 650.0,  cH: 1249.0, iL: 201, iH: 300),
+      (cL: 1250.0, cH: 2049.0, iL: 301, iH: 500),
+    ];
+    for (final b in bp) {
+      if (no2 <= b.cH) return (((b.iH - b.iL) / (b.cH - b.cL)) * (no2 - b.cL) + b.iL).round();
+    }
+    return 500;
+  }
+
+  // O3 → sous-AQI EPA (μg/m³, moyenne 8h, breakpoints EPA)
+  int _o3ToAqi(double o3) {
+    const bp = [
+      (cL: 0.0,   cH: 108.0,  iL: 0,   iH: 50),
+      (cL: 109.0, cH: 137.0,  iL: 51,  iH: 100),
+      (cL: 138.0, cH: 167.0,  iL: 101, iH: 150),
+      (cL: 168.0, cH: 196.0,  iL: 151, iH: 200),
+      (cL: 197.0, cH: 392.0,  iL: 201, iH: 300),
+    ];
+    for (final b in bp) {
+      if (o3 <= b.cH) return (((b.iH - b.iL) / (b.cH - b.cL)) * (o3 - b.cL) + b.iL).round();
+    }
+    return 300;
+  }
+
+  /// AQI composite EPA = MAX des sous-AQI de tous les polluants mesurés
+  int _compositeAqi({required double pm25, required double no2,
+                     required double o3, required double co}) {
+    final aqis = [
+      _pm25ToAqi(pm25),
+      _no2ToAqi(no2),
+      _o3ToAqi(o3),
+    ];
+    return aqis.reduce((a, b) => a > b ? a : b);
   }
 
   String _windDir(double deg) {
