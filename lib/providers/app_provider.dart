@@ -139,10 +139,10 @@ class AppProvider extends ChangeNotifier {
       if (pos != null) {
         _lastLat = pos.latitude; _lastLng = pos.longitude;
         await _fetchCityName(pos.latitude, pos.longitude);
-        await Future.wait([
-          _fetchOpenMeteoAqi(pos.latitude, pos.longitude),
-          _fetchOpenMeteoWeather(pos.latitude, pos.longitude),
-        ]);
+        // Séquentiel pour éviter la race condition :
+        // _fetchOpenMeteoWeather lit _data.aqi → doit s'exécuter APRÈS _fetchOpenMeteoAqi
+        await _fetchOpenMeteoAqi(pos.latitude, pos.longitude);
+        await _fetchOpenMeteoWeather(pos.latitude, pos.longitude);
         _buildNearbyStations(pos.latitude, pos.longitude);
       } else {
         _locationName = _locationName.isEmpty || _locationName == '…'
@@ -260,19 +260,20 @@ class AppProvider extends ChangeNotifier {
   // ── Stations proches ───────────────────────────────────────────────────────
   void _buildNearbyStations(double lat, double lng) {
     final base = _data.aqi;
-    final city = _locationName.split(',').first;
+    final city = _locationName.split(',').first.trim();
+    // Offsets en degrés (~1km = 0.009°), avec direction et distance lisible
     final offsets = [
-      (dlat:  0.010, dlng:  0.015, delta: -8),
-      (dlat: -0.015, dlng: -0.010, delta:  5),
-      (dlat:  0.025, dlng: -0.020, delta:  12),
-      (dlat: -0.008, dlng:  0.030, delta: -3),
-      (dlat:  0.035, dlng:  0.010, delta:  18),
-      (dlat: -0.030, dlng:  0.025, delta: -12),
+      (dlat:  0.009, dlng:  0.013, delta: -8,  label: '1 km N'),
+      (dlat: -0.013, dlng: -0.009, delta:  5,  label: '1.5 km S'),
+      (dlat:  0.022, dlng: -0.018, delta:  12, label: '2.5 km NO'),
+      (dlat: -0.007, dlng:  0.027, delta: -3,  label: '2 km E'),
+      (dlat:  0.031, dlng:  0.009, delta:  18, label: '3.5 km NE'),
+      (dlat: -0.027, dlng:  0.022, delta: -12, label: '3 km SE'),
     ];
     _stations = offsets.map((o) {
       final aqi = (base + o.delta).clamp(1, 500);
       return AqiStation(
-        name: '$city (${o.dlat > 0 ? 'N' : 'S'}${o.dlng > 0 ? 'E' : 'O'})',
+        name: '$city — ${o.label}',
         lat: lat + o.dlat, lng: lng + o.dlng, aqi: aqi,
         pm25: aqi * 0.19, pm10: aqi * 0.45, no2: aqi * 0.9,
         o3: (140 - aqi).clamp(30, 120).toDouble(), source: 'Open-Meteo',
