@@ -70,7 +70,7 @@ class AppProvider extends ChangeNotifier {
   double get personalThreshold => _personalThreshold;
 
   AppProvider() {
-    _loadPrefs();
+    _loadPrefs().then((_) => refreshLocation());
   }
 
   Future<void> _loadPrefs() async {

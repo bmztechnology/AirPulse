@@ -1,14 +1,19 @@
 // lib/screens/home_screen.dart
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../providers/app_provider.dart';
 import '../models/air_quality_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/aqi_widgets.dart';
 import '../l10n/app_localizations.dart';
-import '../navigation/app_shell.dart' show AppShellState; // FIX-CRITICAL-01: no longer imports main.dart
+import '../navigation/app_shell.dart' show AppShellState;
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -99,11 +104,6 @@ class HomeScreen extends StatelessWidget {
     final d = ap.data;
 
     _listenForErrors(context, ap);
-
-    // Premier chargement automatique — une seule fois via le flag initialized
-    if (!ap.initialized && !ap.loading) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => ap.refreshLocation());
-    }
 
     return Scaffold(
       backgroundColor: AppColors.cream,
@@ -749,9 +749,9 @@ class _MiniMapCard extends StatelessWidget {
   }
 }
 
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Share bottom sheet
-// FIX-BUG-5: Share.share() and Clipboard.setData() now actually connected.
+// Share bottom sheet — partage une image PNG générée depuis la carte AQI
 // ─────────────────────────────────────────────────────────────────────────────
 class ShareSheet extends StatefulWidget {
   final AirQualityData data;
@@ -763,24 +763,59 @@ class ShareSheet extends StatefulWidget {
 }
 
 class _ShareSheetState extends State<ShareSheet> {
-  String _format = 'text';
+  bool _sharing = false;
+  final GlobalKey _cardKey = GlobalKey();
 
-  String _buildShareText(AirQualityData d, AppLocalizations l) {
-    return '💨 AirPulse\n'
-        'AQI ${d.aqi} · ${d.stationName}\n'
-        'PM2.5: ${d.pm25.toStringAsFixed(1)} μg/m³ | '
-        'NO₂: ${d.no2.toStringAsFixed(0)} μg | '
-        'O₃: ${d.o3.toStringAsFixed(0)} μg\n'
-        '#AirQuality #AirPulse';
+  // ── Capture le widget _ShareCard en PNG puis partage via Share.shareXFiles ──
+  Future<void> _shareAsImage(AppLocalizations l) async {
+    if (_sharing) return;
+    setState(() => _sharing = true);
+    try {
+      // Laisser le temps au widget de se rendre
+      await Future.delayed(const Duration(milliseconds: 120));
+
+      final boundary = _cardKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) throw Exception('RenderRepaintBoundary introuvable');
+
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) throw Exception('toByteData() retourne null');
+
+      final bytes = byteData.buffer.asUint8List();
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/airpulse_share.png');
+      await file.writeAsBytes(bytes);
+
+      if (!mounted) return;
+      Navigator.pop(context);
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'image/png')],
+        text: '💨 AirPulse · AQI ${widget.data.aqi} · ${widget.data.stationName}',
+      );
+    } catch (e) {
+      debugPrint('AirPulse: shareAsImage error: $e');
+      if (!mounted) return;
+      // Fallback texte si capture échoue
+      Share.share(
+        '💨 AirPulse\n'
+        'AQI ${widget.data.aqi} · ${widget.data.stationName}\n'
+        'PM2.5: ${widget.data.pm25.toStringAsFixed(1)} μg/m³\n'
+        'NO₂: ${widget.data.no2.toStringAsFixed(0)} μg/m³\n'
+        'O₃: ${widget.data.o3.toStringAsFixed(0)} μg/m³\n'
+        '#AirQuality #AirPulse',
+      );
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
   }
 
-  String _buildLink(AirQualityData d) =>
-      'https://airpulse.app/share?aqi=${d.aqi}&loc=${Uri.encodeComponent(d.stationName)}';
-
-  Future<void> _copy(AirQualityData d, AppLocalizations l) async {
-    final text = _format == 'link' ? _buildLink(d) : _buildShareText(d, l);
-    await Clipboard.setData(ClipboardData(text: text));
-    if (!mounted) return; // FIX: mounted check before any context use
+  Future<void> _copyLink(AppLocalizations l) async {
+    final d = widget.data;
+    final url = 'https://airpulse.app/share?aqi=${d.aqi}'
+        '&loc=${Uri.encodeComponent(d.stationName)}';
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!mounted) return;
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(l.shareCopied),
@@ -789,10 +824,6 @@ class _ShareSheetState extends State<ShareSheet> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       duration: const Duration(seconds: 2),
     ));
-  }
-
-  void _share(String target, AirQualityData d, AppLocalizations l) {
-    Share.share(_buildShareText(d, l));
   }
 
   @override
@@ -809,205 +840,273 @@ class _ShareSheetState extends State<ShareSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Handle
           Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                  color: AppColors.cream3,
-                  borderRadius: BorderRadius.circular(2))),
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.cream3,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
           const SizedBox(height: 16),
           Text(l.shareTitle,
-              style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700,
                   color: AppColors.ink)),
           const SizedBox(height: 4),
           Text(l.shareSub,
               style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
+
+          // ── Carte partageable (capturée en PNG) ────────────────────────
+          RepaintBoundary(
+            key: _cardKey,
+            child: _ShareCard(data: d, profile: widget.profile),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Bouton principal : partager l'image ────────────────────────
+          GestureDetector(
+            onTap: _sharing ? null : () => _shareAsImage(l),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: _sharing ? AppColors.ink3 : AppColors.ink,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_sharing)
+                    const SizedBox(
+                      width: 16, height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: AppColors.cream),
+                    )
+                  else
+                    const Text('📤', style: TextStyle(fontSize: 16)),
+                  const SizedBox(width: 8),
+                  Text(
+                    _sharing ? '…' : l.shareBtn,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w700,
+                        color: AppColors.cream),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // ── Copier le lien ─────────────────────────────────────────────
+          GestureDetector(
+            onTap: () => _copyLink(l),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.cream2,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('🔗', style: TextStyle(fontSize: 14)),
+                  const SizedBox(width: 8),
+                  Text(l.shareFmtLink,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600,
+                          color: AppColors.ink2)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _ShareCard — widget visuel capturé en PNG pour le partage
+// Design : logo + AQI grand + jauge + pollutants + profil + branding
+// ─────────────────────────────────────────────────────────────────────────────
+class _ShareCard extends StatelessWidget {
+  final AirQualityData data;
+  final UserProfile profile;
+  const _ShareCard({required this.data, required this.profile});
+
+  String _profileEmoji() => switch (profile) {
+    UserProfile.cyclist => '🚴',
+    UserProfile.athlete => '🏃',
+    UserProfile.sick    => '🫁',
+    UserProfile.normal  => '👤',
+    UserProfile.child   => '👧',
+    UserProfile.elderly => '👴',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final color = aqiColor(data.aqi);
+    final bg    = aqiBgColor(data.aqi);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header : logo + lieu + heure
           Row(
             children: [
-              _FormatBtn(
-                  label: l.shareFmtCard,
-                  value: 'card',
-                  current: _format,
-                  onTap: () => setState(() => _format = 'card')),
-              const SizedBox(width: 8),
-              _FormatBtn(
-                  label: l.shareFmtText,
-                  value: 'text',
-                  current: _format,
-                  onTap: () => setState(() => _format = 'text')),
-              const SizedBox(width: 8),
-              _FormatBtn(
-                  label: l.shareFmtLink,
-                  value: 'link',
-                  current: _format,
-                  onTap: () => setState(() => _format = 'link')),
+              const Text('💨', style: TextStyle(fontSize: 22)),
+              const SizedBox(width: 6),
+              const Text('AirPulse',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800,
+                      color: AppColors.ink, fontFamily: 'DMSans')),
+              const Spacer(),
+              Text(
+                '${data.updatedAt.hour.toString().padLeft(2, '0')}:'
+                '${data.updatedAt.minute.toString().padLeft(2, '0')}',
+                style: const TextStyle(fontSize: 11, color: AppColors.ink3,
+                    fontFamily: 'DMMono'),
+              ),
             ],
           ),
+          const SizedBox(height: 4),
+          Text('📍 ${data.stationName}',
+              style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.cream2,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: _buildPreview(d, l),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+
+          // AQI principal
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _ShareDest(
-                  icon: '💚',
-                  label: l.shareWhatsApp,
-                  onTap: () => _share('whatsapp', d, l)),
-              _ShareDest(
-                  icon: '✈️',
-                  label: l.shareTelegram,
-                  onTap: () => _share('telegram', d, l)),
-              _ShareDest(
-                  icon: '🐦',
-                  label: l.shareTwitter,
-                  onTap: () => _share('twitter', d, l)),
-              _ShareDest(
-                  icon: '📱',
-                  label: l.shareSMS,
-                  onTap: () => _share('sms', d, l)),
-              _ShareDest(
-                  icon: '📧',
-                  label: l.shareEmail,
-                  onTap: () => _share('email', d, l)),
-              _ShareDest(
-                  icon: '📋',
-                  label: l.shareCopy,
-                  onTap: () => _copy(d, l)),
-              _ShareDest(
-                  icon: '⋯',
-                  label: l.shareMore,
-                  onTap: () => _share('native', d, l)),
+              Text(
+                '${data.aqi}',
+                style: TextStyle(
+                  fontSize: 72, fontWeight: FontWeight.w800,
+                  color: color, fontFamily: 'DMMono',
+                  letterSpacing: -3, height: 0.9,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                        color: bg, borderRadius: BorderRadius.circular(8)),
+                    child: Text(
+                      _statusLabel(context),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                          color: color),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(_profileEmoji(),
+                      style: const TextStyle(fontSize: 16)),
+                ],
+              ),
             ],
+          ),
+          const SizedBox(height: 12),
+
+          // Jauge AQI
+          AqiGauge(aqi: data.aqi),
+          const SizedBox(height: 16),
+
+          // Grille pollutants
+          Row(
+            children: [
+              _PollCell('PM2.5', data.pm25.toStringAsFixed(1), 'μg/m³', color),
+              const SizedBox(width: 8),
+              _PollCell('PM10',  data.pm10.toStringAsFixed(1), 'μg/m³', AppColors.ink2),
+              const SizedBox(width: 8),
+              _PollCell('NO₂',   data.no2.toStringAsFixed(0),  'μg/m³', AppColors.ink2),
+              const SizedBox(width: 8),
+              _PollCell('O₃',    data.o3.toStringAsFixed(0),   'μg/m³', AppColors.ink2),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Météo
+          Row(
+            children: [
+              Text('🌡️ ${data.weather.tempC.toStringAsFixed(0)}°C',
+                  style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
+              const SizedBox(width: 12),
+              Text('💨 ${data.weather.windKmh.toStringAsFixed(0)} km/h ${data.weather.windDir}',
+                  style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
+              const SizedBox(width: 12),
+              Text('💧 ${data.weather.humidity}%',
+                  style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Branding bas
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.ink,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text(
+              'airpulse.app',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                  color: AppColors.cream, fontFamily: 'DMMono'),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPreview(AirQualityData d, AppLocalizations l) {
-    if (_format == 'link') {
-      return Text(_buildLink(d),
-          style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.accent,
-              fontFamily: 'DMMono'));
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(children: [
-          const Text('💨 AirPulse',
-              style:
-                  TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-          const Spacer(),
-          Text(l.now,
-              style:
-                  const TextStyle(fontSize: 10, color: AppColors.ink3)),
-        ]),
-        const SizedBox(height: 6),
-        Text('AQI ${d.aqi} · ${d.stationName}',
-            style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: aqiColor(d.aqi),
-                fontFamily: 'DMMono')),
-        const SizedBox(height: 4),
-        Text(
-            'PM2.5: ${d.pm25.toStringAsFixed(1)} μg | '
-            'NO₂: ${d.no2.toStringAsFixed(0)} μg | '
-            'O₃: ${d.o3.toStringAsFixed(0)} μg',
-            style:
-                const TextStyle(fontSize: 11, color: AppColors.ink3)),
-      ],
-    );
+  String _statusLabel(BuildContext context) {
+    return switch (aqiStatusFrom(data.aqi)) {
+      AqiStatus.good               => 'Good',
+      AqiStatus.moderate           => 'Moderate',
+      AqiStatus.unhealthySensitive => 'Unhealthy*',
+      AqiStatus.unhealthy          => 'Unhealthy',
+      AqiStatus.veryUnhealthy      => 'Very Unhealthy',
+      AqiStatus.hazardous          => 'Hazardous',
+    };
   }
-}
 
-class _FormatBtn extends StatelessWidget {
-  final String label;
-  final String value;
-  final String current;
-  final VoidCallback onTap;
-  const _FormatBtn(
-      {required this.label,
-      required this.value,
-      required this.current,
-      required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final active = value == current;
+  Widget _PollCell(String label, String value, String unit, Color color) {
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: active ? AppColors.ink : AppColors.cream2,
-            borderRadius: BorderRadius.circular(10),
-            border:
-                Border.all(color: active ? AppColors.ink : AppColors.border),
-          ),
-          child: Text(label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: active ? AppColors.cream : AppColors.ink3)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        decoration: BoxDecoration(
+          color: AppColors.cream2,
+          borderRadius: BorderRadius.circular(10),
         ),
-      ),
-    );
-  }
-}
-
-class _ShareDest extends StatelessWidget {
-  final String icon;
-  final String label;
-  final VoidCallback onTap;
-  const _ShareDest(
-      {required this.icon, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 64,
-        child: Column(children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.cream2,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border),
-            ),
-            child:
-                Center(child: Text(icon, style: const TextStyle(fontSize: 20))),
-          ),
-          const SizedBox(height: 4),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.ink2),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
+                    color: AppColors.ink3)),
+            const SizedBox(height: 2),
+            Text(value,
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
+                    color: color, fontFamily: 'DMMono')),
+            Text(unit,
+                style: const TextStyle(fontSize: 8, color: AppColors.ink3)),
+          ],
+        ),
       ),
     );
   }
