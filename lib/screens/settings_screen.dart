@@ -6,40 +6,11 @@ import '../models/air_quality_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/aqi_widgets.dart';
 import '../l10n/app_localizations.dart';
+import 'settings_detail_screens.dart';
 
-/// Fonction top-level — accessible depuis SettingsScreen ET _ProfileCard.
-void _showComingSoon(BuildContext context, String title) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    builder: (_) => Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.cream,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(width: 36, height: 4,
-            decoration: BoxDecoration(color: AppColors.cream3,
-              borderRadius: BorderRadius.circular(2))),
-          const SizedBox(height: 20),
-          Text(title, style: const TextStyle(fontSize: 17,
-              fontWeight: FontWeight.w700, color: AppColors.ink)),
-          const SizedBox(height: 8),
-          const Text('Cette fonctionnalité sera disponible dans une prochaine version.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.ink3, height: 1.5)),
-          const SizedBox(height: 20),
-        ],
-      ),
-    ),
-  );
+void _push(BuildContext context, Widget screen) {
+  Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
 }
-
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -190,10 +161,10 @@ class SettingsScreen extends StatelessWidget {
                 SettingsRow(icon: 'ℹ️', label: l.settingsVersion, desc: l.settingsVersionDesc),
                 SettingsRow(icon: '📖', label: l.settingsMethodology, desc: l.settingsMethodologyDesc,
                   trailing: const Text('›', style: TextStyle(fontSize: 16, color: AppColors.ink3)),
-                  onTap: () => _showComingSoon(context, l.settingsMethodology)),
+                  onTap: () => _push(context, const MethodologyScreen())),
                 SettingsRow(icon: '🔒', label: l.settingsPrivacy,
                   trailing: const Text('›', style: TextStyle(fontSize: 16, color: AppColors.ink3)),
-                  onTap: () => _showComingSoon(context, l.settingsPrivacy)),
+                  onTap: () => _push(context, const PrivacyScreen())),
               ]),
             ),
 
@@ -378,13 +349,13 @@ class _ProfileCard extends StatelessWidget {
           const SizedBox(height: 12),
           SettingsRow(icon: '🏃', label: l.settingsActivityType,    desc: l.settingsActivityTypeDesc,
             trailing: const Text('›', style: TextStyle(color: AppColors.ink3, fontSize: 16)),
-            onTap: () => _showComingSoon(context, l.settingsActivityType)),
+            onTap: () => _push(context, const ActivityTypeScreen())),
           SettingsRow(icon: '🫁', label: l.settingsRespSensitivity, desc: l.settingsRespSensitivityDesc,
             trailing: const Text('›', style: TextStyle(color: AppColors.ink3, fontSize: 16)),
-            onTap: () => _showComingSoon(context, l.settingsRespSensitivity)),
+            onTap: () => _push(context, const RespSensitivityScreen())),
           SettingsRow(icon: '💊', label: l.settingsMedical,          desc: l.settingsMedicalDesc,
             trailing: const Text('›', style: TextStyle(color: AppColors.ink3, fontSize: 16)),
-            onTap: () => _showComingSoon(context, l.settingsMedical)),
+            onTap: () => _push(context, const MedicalConditionsScreen())),
         ],
       ),
     );

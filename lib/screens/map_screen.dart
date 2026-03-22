@@ -19,7 +19,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapCtrl = MapController();
   String _layer = 'aqi';
-  bool _centeredOnGps = false; // évite de recentrer à chaque rebuild
+  bool _centeredOnGps = false;
 
   final _layers = ['aqi', 'pm25', 'pm10', 'no2', 'o3', 'wind'];
 
@@ -49,22 +49,35 @@ class _MapScreenState extends State<MapScreen> {
   };
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Centrer sur la vraie position GPS dès qu'elle arrive, une seule fois
+  void initState() {
+    super.initState();
+    // Écouter le provider APRÈS le premier frame — se centre dès que GPS arrive
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ap = context.read<AppProvider>();
+      ap.addListener(_onProviderUpdate);
+      // Si la position est déjà disponible, centrer immédiatement
+      _tryCenterOnGps(ap);
+    });
+  }
+
+  void _onProviderUpdate() {
     final ap = context.read<AppProvider>();
-    if (!_centeredOnGps && ap.lastLat != null && ap.lastLng != null) {
+    _tryCenterOnGps(ap);
+  }
+
+  void _tryCenterOnGps(AppProvider ap) {
+    if (!_centeredOnGps && ap.lastLat != null && ap.lastLng != null && mounted) {
       _centeredOnGps = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _mapCtrl.move(LatLng(ap.lastLat!, ap.lastLng!), 11);
-        }
-      });
+      _mapCtrl.move(LatLng(ap.lastLat!, ap.lastLng!), 12);
     }
   }
 
   @override
   void dispose() {
+    // Retirer le listener proprement
+    try {
+      context.read<AppProvider>().removeListener(_onProviderUpdate);
+    } catch (_) {}
     _mapCtrl.dispose();
     super.dispose();
   }
@@ -73,7 +86,7 @@ class _MapScreenState extends State<MapScreen> {
     final lat = ap.lastLat ?? 48.856;
     final lng = ap.lastLng ?? 2.352;
     _centeredOnGps = true;
-    _mapCtrl.move(LatLng(lat, lng), 11);
+    _mapCtrl.move(LatLng(lat, lng), 12);
   }
 
   @override
