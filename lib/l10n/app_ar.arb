@@ -184,5 +184,73 @@
   "tipMaskNotNeeded": "قناع FFP2 غير ضروري في هذا المستوى.",
   "alertNoHistory": "لم يتم تشغيل أي تنبيهات بعد.",
   "historyTitle": "سجل AQI لـ 7 أيام",
-  "historyEmpty": "لا يوجد سجل بعد — قم بالتحديث لتسجيل أول قياس."
+  "historyEmpty": "لا يوجد سجل بعد — قم بالتحديث لتسجيل أول قياس.",
+  "pollenNone": "معدوم",
+  "pollenVeryLow": "منخفض جداً",
+  "pollenLow": "منخفض",
+  "pollenModerate": "معتدل",
+  "pollenHigh": "مرتفع",
+  "pollenVeryHigh": "مرتفع جداً",
+  "pollenLoading": "جارٍ تحميل بيانات حبوب اللقاح…",
+  "retryBtn": "إعادة المحاولة",
+  "mapAdviceGood": "✅ هواء ممتاز — أنشطة بلا قيود",
+  "mapAdviceModerate": "⚠️ هواء معتدل — انتباه للفئات الحساسة",
+  "mapAdviceUnhealthy": "🚴 قلل من المجهود المطول في الهواء الطلق",
+  "mapAdvicePoor": "😷 قناع موصى به — تجنب الخروج",
+  "mapAdviceDangerous": "🚫 ابق في الداخل — هواء خطير",
+  "mapSafeZone": "✅ منطقة آمنة",
+  "mapZonesToAvoid": "🚫 {n} منطقة/مناطق تجنبها",
+  "@mapZonesToAvoid": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mapForecastIn": "توقع خلال {h} ساعة",
+  "@mapForecastIn": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "mapNow": "الآن",
+  "notifTitleModerate": "💛 AirPulse — جودة معتدلة",
+  "notifBodyModerate": "AQI {aqi} في {station}. انتباه للفئات الحساسة.",
+  "@notifBodyModerate": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTitlePoor": "🔴 AirPulse — جودة سيئة",
+  "notifBodyPoor": "AQI {aqi} في {station}. تجنب الأنشطة الخارجية.",
+  "@notifBodyPoor": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTitleThreshold": "⚠️ AirPulse — تم تجاوز الحد الشخصي",
+  "notifBodyThreshold": "AQI {aqi} يتجاوز حدك البالغ {threshold} في {station}.",
+  "@notifBodyThreshold": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifChannelDesc": "تنبيهات جودة الهواء"
 }

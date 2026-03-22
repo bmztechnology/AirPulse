@@ -184,5 +184,73 @@
   "tipMaskNotNeeded": "FFP2-Maske bei diesem Niveau nicht nötig.",
   "alertNoHistory": "Noch keine Alarme ausgelöst.",
   "historyTitle": "AQI-Verlauf 7 Tage",
-  "historyEmpty": "Noch kein Verlauf — aktualisieren Sie, um die erste Messung aufzuzeichnen."
+  "historyEmpty": "Noch kein Verlauf — aktualisieren Sie, um die erste Messung aufzuzeichnen.",
+  "pollenNone": "Keine",
+  "pollenVeryLow": "Sehr gering",
+  "pollenLow": "Gering",
+  "pollenModerate": "Mäßig",
+  "pollenHigh": "Hoch",
+  "pollenVeryHigh": "Sehr hoch",
+  "pollenLoading": "Pollendaten werden geladen…",
+  "retryBtn": "Wiederholen",
+  "mapAdviceGood": "✅ Ausgezeichnete Luft — Aktivitäten uneingeschränkt",
+  "mapAdviceModerate": "⚠️ Mäßige Luft — empfindliche Gruppen aufpassen",
+  "mapAdviceUnhealthy": "🚴 Verlängerte Anstrengungen reduzieren",
+  "mapAdvicePoor": "😷 Maske empfohlen — Ausflüge vermeiden",
+  "mapAdviceDangerous": "🚫 Drinnen bleiben — gefährliche Luft",
+  "mapSafeZone": "✅ Sichere Zone",
+  "mapZonesToAvoid": "🚫 {n} Zone(n) meiden",
+  "@mapZonesToAvoid": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mapForecastIn": "Vorhersage in {h}h",
+  "@mapForecastIn": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "mapNow": "Jetzt",
+  "notifTitleModerate": "💛 AirPulse — Mäßige Qualität",
+  "notifBodyModerate": "AQI {aqi} in {station}. Empfindliche Gruppen aufpassen.",
+  "@notifBodyModerate": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTitlePoor": "🔴 AirPulse — Schlechte Qualität",
+  "notifBodyPoor": "AQI {aqi} in {station}. Außenaktivitäten vermeiden.",
+  "@notifBodyPoor": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTitleThreshold": "⚠️ AirPulse — Persönlicher Schwellenwert überschritten",
+  "notifBodyThreshold": "AQI {aqi} überschreitet Ihren Schwellenwert von {threshold} in {station}.",
+  "@notifBodyThreshold": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifChannelDesc": "Luftqualitätswarnungen"
 }

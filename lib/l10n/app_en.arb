@@ -252,5 +252,73 @@
   "tipMaskNotNeeded": "FFP2 mask not required at this level.",
   "alertNoHistory": "No alerts triggered yet.",
   "historyTitle": "7-day AQI history",
-  "historyEmpty": "No history yet — refresh to record your first measurement."
+  "historyEmpty": "No history yet — refresh to record your first measurement.",
+  "pollenNone": "None",
+  "pollenVeryLow": "Very low",
+  "pollenLow": "Low",
+  "pollenModerate": "Moderate",
+  "pollenHigh": "High",
+  "pollenVeryHigh": "Very high",
+  "pollenLoading": "Pollen data loading…",
+  "retryBtn": "Retry",
+  "mapAdviceGood": "✅ Excellent air — activities unrestricted",
+  "mapAdviceModerate": "⚠️ Moderate air — sensitive groups take care",
+  "mapAdviceUnhealthy": "🚴 Reduce prolonged outdoor effort",
+  "mapAdvicePoor": "😷 Mask recommended — avoid outings",
+  "mapAdviceDangerous": "🚫 Stay indoors — dangerous air",
+  "mapSafeZone": "✅ Safe zone",
+  "mapZonesToAvoid": "🚫 {n} zone(s) to avoid",
+  "@mapZonesToAvoid": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mapForecastIn": "Forecast in {h}h",
+  "@mapForecastIn": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "mapNow": "Now",
+  "notifTitleModerate": "💛 AirPulse — Moderate quality",
+  "notifBodyModerate": "AQI {aqi} at {station}. Sensitive groups take care.",
+  "@notifBodyModerate": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTitlePoor": "🔴 AirPulse — Poor quality",
+  "notifBodyPoor": "AQI {aqi} at {station}. Avoid outdoor activities.",
+  "@notifBodyPoor": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTitleThreshold": "⚠️ AirPulse — Personal threshold exceeded",
+  "notifBodyThreshold": "AQI {aqi} exceeds your threshold of {threshold} at {station}.",
+  "@notifBodyThreshold": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifChannelDesc": "Air quality alerts"
 }

@@ -184,5 +184,73 @@
   "tipMaskNotNeeded": "このレベルではFFP2マスクは不要です。",
   "alertNoHistory": "まだアラートはありません。",
   "historyTitle": "7日間のAQI履歴",
-  "historyEmpty": "履歴はまだありません — 更新して最初の測定を記録してください。"
+  "historyEmpty": "履歴はまだありません — 更新して最初の測定を記録してください。",
+  "pollenNone": "なし",
+  "pollenVeryLow": "非常に低い",
+  "pollenLow": "低い",
+  "pollenModerate": "中程度",
+  "pollenHigh": "高い",
+  "pollenVeryHigh": "非常に高い",
+  "pollenLoading": "花粉データ読み込み中…",
+  "retryBtn": "再試行",
+  "mapAdviceGood": "✅ 空気は良好 — 活動制限なし",
+  "mapAdviceModerate": "⚠️ 空気は普通 — 敏感な人は注意",
+  "mapAdviceUnhealthy": "🚴 屋外での長時間活動を減らす",
+  "mapAdvicePoor": "😷 マスク推奨 — 外出を避ける",
+  "mapAdviceDangerous": "🚫 室内にいてください — 危険な空気",
+  "mapSafeZone": "✅ 安全エリア",
+  "mapZonesToAvoid": "🚫 {n} 個の回避エリア",
+  "@mapZonesToAvoid": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mapForecastIn": "{h}時間後の予報",
+  "@mapForecastIn": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "mapNow": "今",
+  "notifTitleModerate": "💛 AirPulse — 中程度の品質",
+  "notifBodyModerate": "{station} AQI {aqi}。敏感な人は注意。",
+  "@notifBodyModerate": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTitlePoor": "🔴 AirPulse — 低品質",
+  "notifBodyPoor": "{station} AQI {aqi}。屋外活動を避ける。",
+  "@notifBodyPoor": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTitleThreshold": "⚠️ AirPulse — 個人閾値超過",
+  "notifBodyThreshold": "{station} AQI {aqi} があなたの閾値 {threshold} を超えました。",
+  "@notifBodyThreshold": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifChannelDesc": "大気質アラート"
 }

@@ -30,7 +30,7 @@ class HomeScreen extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
-          label: 'Réessayer',
+          label: l.retryBtn,
           textColor: Colors.white,
           onPressed: () => ap.refreshLocation(),
         ),
@@ -118,17 +118,18 @@ class HomeScreen extends StatelessWidget {
 
     // 🌿 Pollen
     final p = d.pollen;
-    final pollenLabels = ['Nul', 'Très faible', 'Faible', 'Modéré', 'Élevé', 'Très élevé'];
-    final pollenColors = [
-      '🟢', '🟢', '🟡', '🟠', '🔴', '🔴',
+    final pollenLabels = [
+      l.pollenNone, l.pollenVeryLow, l.pollenLow,
+      l.pollenModerate, l.pollenHigh, l.pollenVeryHigh,
     ];
+    final pollenColors = ['🟢', '🟢', '🟡', '🟠', '🔴', '🔴'];
     final String pollenText;
     if (p.total == 0 && p.grass == 0 && p.trees == 0) {
-      pollenText = 'Données pollen en cours de chargement…';
+      pollenText = l.pollenLoading;
     } else {
-      final dominantLabel = pollenColors[p.total.clamp(0,5)];
-      pollenText = '$dominantLabel Pollen total : ${pollenLabels[p.total.clamp(0,5)]} (${p.total}/5)\n'
-          '🌾 Graminées ${p.grass}/5  🌳 Arbres ${p.trees}/5  🍄 Moisissures ${p.molds}/5';
+      final idx = p.total.clamp(0, 5);
+      pollenText = '${pollenColors[idx]} ${l.pollenTotalLabel} : ${pollenLabels[idx]} (${p.total}/5)\n'
+          '🌾 ${l.grassLabel} ${p.grass}/5  🌳 ${l.treesLabel} ${p.trees}/5  🍄 ${l.moldsLabel} ${p.molds}/5';
     }
 
     // 🌤️ Météo & dispersion

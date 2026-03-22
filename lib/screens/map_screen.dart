@@ -312,7 +312,7 @@ class _MapScreenState extends State<MapScreen> {
                   if (_showAvoidZones && stations.isNotEmpty)
                     Positioned(
                       top: 10, left: 10,
-                      child: _buildAvoidZonesBadge(ap, stations),
+                      child: _buildAvoidZonesBadge(ap, stations, l),
                     ),
 
                   // ── Indicateur prévision horaire ─────────────────────
@@ -530,7 +530,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // ── Badge zones à éviter ──────────────────────────────────────────────────
-  Widget _buildAvoidZonesBadge(AppProvider ap, List<AqiStation> stations) {
+  Widget _buildAvoidZonesBadge(AppProvider ap, List<AqiStation> stations, AppLocalizations l) {
     final danger = stations
         .where((s) => _forecastAqi(s, ap) > ap.personalThreshold)
         .length;
@@ -540,7 +540,7 @@ class _MapScreenState extends State<MapScreen> {
         decoration: BoxDecoration(color: AppColors.aqiGreenBg,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.aqiGreen)),
-        child: Text('✅ Zone sûre',
+        child: Text(l.mapSafeZone,
           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
               color: AppColors.aqiGreen)),
       );
@@ -550,7 +550,7 @@ class _MapScreenState extends State<MapScreen> {
       decoration: BoxDecoration(color: AppColors.aqiRedBg,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppColors.aqiRed)),
-      child: Text('🚫 $danger zone${danger > 1 ? 's' : ''} à éviter',
+      child: Text(l.mapZonesToAvoid(danger),
         style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
             color: AppColors.aqiRed)),
     );
@@ -589,7 +589,7 @@ class _MapScreenState extends State<MapScreen> {
                       ? aqiColor(forecastAqi) : AppColors.border),
                 ),
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text(h == 0 ? 'Maint.' : '+${h}h',
+                  Text(h == 0 ? l.mapNow : '+${h}h',
                     style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600,
                       color: active ? Colors.white : AppColors.ink3)),
                   Text('$forecastAqi',
@@ -640,7 +640,7 @@ class _MapScreenState extends State<MapScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(color: bg,
                     borderRadius: BorderRadius.circular(8)),
-                child: Text('Prévision dans $_forecastHour h',
+                child: Text(l.mapForecastIn(_forecastHour),
                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
                       color: color)),
               ),
@@ -652,7 +652,7 @@ class _MapScreenState extends State<MapScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: bg,
                   borderRadius: BorderRadius.circular(12)),
-              child: Text(_aqiAdvice(displayAqi),
+              child: Text(_aqiAdvice(displayAqi, l),
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
                     color: color)),
             ),
@@ -669,12 +669,12 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  String _aqiAdvice(int aqi) {
-    if (aqi <= 50)  return '✅ Air excellent — activités libres';
-    if (aqi <= 100) return '⚠️ Air modéré — attention aux personnes sensibles';
-    if (aqi <= 150) return '🚴 Réduisez les efforts prolongés';
-    if (aqi <= 200) return '😷 Masque recommandé — évitez les sorties';
-    return '🚫 Restez à l\'intérieur — air dangereux';
+  String _aqiAdvice(int aqi, AppLocalizations l) {
+    if (aqi <= 50)  return l.mapAdviceGood;
+    if (aqi <= 100) return l.mapAdviceModerate;
+    if (aqi <= 150) return l.mapAdviceUnhealthy;
+    if (aqi <= 200) return l.mapAdvicePoor;
+    return l.mapAdviceDangerous;
   }
 
   Widget _pollStat(String label, String value) => Container(

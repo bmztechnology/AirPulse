@@ -33,7 +33,7 @@ Future<void> initNotifications() async {
 Future<void> _sendNotification(String title, String body) async {
   const android = AndroidNotificationDetails(
     'airpulse_aqi', 'AirPulse AQI',
-    channelDescription: 'Alertes qualité de l\'air',
+    channelDescription: 'Air quality alerts',
     importance: Importance.high,
     priority: Priority.high,
     icon: '@mipmap/ic_launcher',
@@ -390,25 +390,24 @@ class AppProvider extends ChangeNotifier {
     if ((_alerts['aqi_50']  ?? false) && aqi > 50) {
       entries.add({'type': 'aqi_50', 'aqi': aqi, 'station': _data.stationName, 'time': now});
       unawaited(_sendNotification(
-        '💛 AirPulse — Qualité modérée',
-        'AQI $aqi à ${_data.stationName}. Attention pour les personnes sensibles.',
+        '💛 AirPulse — ${_localizedAqiQuality(_locale.languageCode, 'moderate')}',
+        'AQI $aqi · ${_data.stationName}',
       ));
     }
     if ((_alerts['aqi_100'] ?? true) && aqi > 100) {
       entries.add({'type': 'aqi_100', 'aqi': aqi, 'station': _data.stationName, 'time': now});
       unawaited(_sendNotification(
-        '🔴 AirPulse — Qualité mauvaise',
-        'AQI $aqi à ${_data.stationName}. Évitez les activités extérieures.',
+        '🔴 AirPulse — ${_localizedAqiQuality(_locale.languageCode, 'poor')}',
+        'AQI $aqi · ${_data.stationName}',
       ));
     }
     if ((_alerts['pm25_15'] ?? true) && pm25 > 15) {
       entries.add({'type': 'pm25_15', 'pm25': pm25, 'station': _data.stationName, 'time': now});
     }
-    // Alerte seuil personnel
     if (aqi > _personalThreshold) {
       unawaited(_sendNotification(
-        '⚠️ AirPulse — Seuil personnel dépassé',
-        'AQI $aqi dépasse votre seuil de ${_personalThreshold.toInt()} à ${_data.stationName}.',
+        '⚠️ AirPulse — ${_localizedThresholdTitle(_locale.languageCode)}',
+        'AQI $aqi > ${_personalThreshold.toInt()} · ${_data.stationName}',
       ));
     }
 
@@ -483,6 +482,27 @@ class AppProvider extends ChangeNotifier {
   String _windDir(double deg) {
     const d = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'];
     return d[((deg + 11.25) / 22.5).floor() % 16];
+  }
+
+  // Traductions notifications (provider n'a pas accès à AppLocalizations)
+  String _localizedAqiQuality(String lang, String level) {
+    const t = {
+      'moderate': {'en':'Moderate quality','fr':'Qualité modérée','es':'Calidad moderada',
+        'de':'Mäßige Qualität','it':'Qualità moderata','pt':'Qualidade moderada',
+        'ar':'جودة معتدلة','zh':'中等质量','ja':'中程度の品質'},
+      'poor':     {'en':'Poor quality','fr':'Qualité mauvaise','es':'Mala calidad',
+        'de':'Schlechte Qualität','it':'Qualità scadente','pt':'Má qualidade',
+        'ar':'جودة سيئة','zh':'质量差','ja':'低品質'},
+    };
+    return t[level]?[lang] ?? t[level]!['en']!;
+  }
+
+  String _localizedThresholdTitle(String lang) {
+    const t = {'en':'Personal threshold exceeded','fr':'Seuil personnel dépassé',
+      'es':'Umbral personal superado','de':'Persönlicher Schwellenwert überschritten',
+      'it':'Soglia personale superata','pt':'Limiar pessoal excedido',
+      'ar':'تم تجاوز الحد الشخصي','zh':'超过个人阈值','ja':'個人閾値超過'};
+    return t[lang] ?? t['en']!;
   }
 
   // ── Setters ────────────────────────────────────────────────────────────────

@@ -184,5 +184,73 @@
   "tipMaskNotNeeded": "Mascherina FFP2 non necessaria a questo livello.",
   "alertNoHistory": "Nessun avviso ancora attivato.",
   "historyTitle": "Storico AQI 7 giorni",
-  "historyEmpty": "Nessuna cronologia — aggiorna per registrare la prima misurazione."
+  "historyEmpty": "Nessuna cronologia — aggiorna per registrare la prima misurazione.",
+  "pollenNone": "Nessuno",
+  "pollenVeryLow": "Molto basso",
+  "pollenLow": "Basso",
+  "pollenModerate": "Moderato",
+  "pollenHigh": "Alto",
+  "pollenVeryHigh": "Molto alto",
+  "pollenLoading": "Caricamento dati polline…",
+  "retryBtn": "Riprova",
+  "mapAdviceGood": "✅ Aria eccellente — attività senza restrizioni",
+  "mapAdviceModerate": "⚠️ Aria moderata — attenzione ai soggetti sensibili",
+  "mapAdviceUnhealthy": "🚴 Ridurre gli sforzi prolungati all'aperto",
+  "mapAdvicePoor": "😷 Mascherina raccomandata — evitare uscite",
+  "mapAdviceDangerous": "🚫 Rimanere all'interno — aria pericolosa",
+  "mapSafeZone": "✅ Zona sicura",
+  "mapZonesToAvoid": "🚫 {n} zona/e da evitare",
+  "@mapZonesToAvoid": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mapForecastIn": "Previsione tra {h}h",
+  "@mapForecastIn": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "mapNow": "Ora",
+  "notifTitleModerate": "💛 AirPulse — Qualità moderata",
+  "notifBodyModerate": "AQI {aqi} a {station}. Attenzione ai soggetti sensibili.",
+  "@notifBodyModerate": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTitlePoor": "🔴 AirPulse — Qualità scadente",
+  "notifBodyPoor": "AQI {aqi} a {station}. Evitare attività all'aperto.",
+  "@notifBodyPoor": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTitleThreshold": "⚠️ AirPulse — Soglia personale superata",
+  "notifBodyThreshold": "AQI {aqi} supera la soglia di {threshold} a {station}.",
+  "@notifBodyThreshold": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifChannelDesc": "Avvisi sulla qualità dell'aria"
 }

@@ -184,5 +184,73 @@
   "tipMaskNotNeeded": "该水平下无需FFP2口罩。",
   "alertNoHistory": "暂无触发的警报。",
   "historyTitle": "7天AQI历史",
-  "historyEmpty": "暂无历史记录 — 刷新以记录第一次测量。"
+  "historyEmpty": "暂无历史记录 — 刷新以记录第一次测量。",
+  "pollenNone": "无",
+  "pollenVeryLow": "极低",
+  "pollenLow": "低",
+  "pollenModerate": "中等",
+  "pollenHigh": "高",
+  "pollenVeryHigh": "极高",
+  "pollenLoading": "花粉数据加载中…",
+  "retryBtn": "重试",
+  "mapAdviceGood": "✅ 空气优良 — 活动无限制",
+  "mapAdviceModerate": "⚠️ 空气一般 — 敏感人群注意",
+  "mapAdviceUnhealthy": "🚴 减少长时间户外活动",
+  "mapAdvicePoor": "😷 建议戴口罩 — 避免外出",
+  "mapAdviceDangerous": "🚫 待在室内 — 空气危险",
+  "mapSafeZone": "✅ 安全区域",
+  "mapZonesToAvoid": "🚫 {n} 个需回避区域",
+  "@mapZonesToAvoid": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mapForecastIn": "{h}小时后预报",
+  "@mapForecastIn": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "mapNow": "现在",
+  "notifTitleModerate": "💛 AirPulse — 中等质量",
+  "notifBodyModerate": "{station} AQI {aqi}。敏感人群注意。",
+  "@notifBodyModerate": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTitlePoor": "🔴 AirPulse — 质量差",
+  "notifBodyPoor": "{station} AQI {aqi}。避免户外活动。",
+  "@notifBodyPoor": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTitleThreshold": "⚠️ AirPulse — 超过个人阈值",
+  "notifBodyThreshold": "{station} AQI {aqi} 超过您的阈值 {threshold}。",
+  "@notifBodyThreshold": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      },
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "notifChannelDesc": "空气质量警报"
 }
