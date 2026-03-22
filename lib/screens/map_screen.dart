@@ -19,6 +19,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapCtrl = MapController();
   String _layer = 'aqi';
+  bool _centeredOnGps = false; // évite de recentrer à chaque rebuild
 
   final _layers = ['aqi', 'pm25', 'pm10', 'no2', 'o3', 'wind'];
 
@@ -32,7 +33,6 @@ class _MapScreenState extends State<MapScreen> {
     _      => l.toUpperCase(),
   };
 
-  // FIX-minor-5: Use real windKmh from AqiStation model
   double _stationValue(AqiStation s) => switch (_layer) {
     'pm25' => s.pm25,
     'pm10' => s.pm10,
@@ -49,14 +49,30 @@ class _MapScreenState extends State<MapScreen> {
   };
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Centrer sur la vraie position GPS dès qu'elle arrive, une seule fois
+    final ap = context.read<AppProvider>();
+    if (!_centeredOnGps && ap.lastLat != null && ap.lastLng != null) {
+      _centeredOnGps = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _mapCtrl.move(LatLng(ap.lastLat!, ap.lastLng!), 11);
+        }
+      });
+    }
+  }
+
+  @override
   void dispose() {
-    _mapCtrl.dispose(); // FIX-BUG-12: Dispose MapController to prevent memory leak
+    _mapCtrl.dispose();
     super.dispose();
   }
 
   void _centerMap(AppProvider ap) {
     final lat = ap.lastLat ?? 48.856;
     final lng = ap.lastLng ?? 2.352;
+    _centeredOnGps = true;
     _mapCtrl.move(LatLng(lat, lng), 11);
   }
 

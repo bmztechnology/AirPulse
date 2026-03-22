@@ -437,7 +437,8 @@ class _AqiMainCard extends StatelessWidget {
                       height: 0.9),
                 ),
               ),
-              Padding(
+              Flexible(
+                child: Padding(
                 padding: const EdgeInsets.only(bottom: 10, left: 6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,6 +450,8 @@ class _AqiMainCard extends StatelessWidget {
                           color: bg,
                           borderRadius: BorderRadius.circular(8)),
                       child: Text(statusLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -456,10 +459,13 @@ class _AqiMainCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(aqiSourceLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontSize: 10, color: AppColors.ink3)),
                   ],
                 ),
+              ),
               ),
             ],
           ),
