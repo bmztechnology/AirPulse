@@ -132,7 +132,7 @@ class _MapScreenState extends State<MapScreen> {
               height: MediaQuery.of(context).size.height * 0.40,
               child: FlutterMap(
                 mapController: _mapCtrl,
-                options: const MapOptions(
+                options: MapOptions(
                   initialCenter: LatLng(ap.lastLat ?? 48.856, ap.lastLng ?? 2.352),
                   initialZoom: 11,
                   maxZoom: 18,
