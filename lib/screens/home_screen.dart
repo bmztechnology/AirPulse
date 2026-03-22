@@ -1030,13 +1030,13 @@ class _ShareCard extends StatelessWidget {
           // Grille pollutants
           Row(
             children: [
-              _PollCell('PM2.5', data.pm25.toStringAsFixed(1), 'μg/m³', color),
+              _pollCell('PM2.5', data.pm25.toStringAsFixed(1), 'μg/m³', color),
               const SizedBox(width: 8),
-              _PollCell('PM10',  data.pm10.toStringAsFixed(1), 'μg/m³', AppColors.ink2),
+              _pollCell('PM10',  data.pm10.toStringAsFixed(1), 'μg/m³', AppColors.ink2),
               const SizedBox(width: 8),
-              _PollCell('NO₂',   data.no2.toStringAsFixed(0),  'μg/m³', AppColors.ink2),
+              _pollCell('NO₂',   data.no2.toStringAsFixed(0),  'μg/m³', AppColors.ink2),
               const SizedBox(width: 8),
-              _PollCell('O₃',    data.o3.toStringAsFixed(0),   'μg/m³', AppColors.ink2),
+              _pollCell('O₃',    data.o3.toStringAsFixed(0),   'μg/m³', AppColors.ink2),
             ],
           ),
           const SizedBox(height: 14),
@@ -1085,7 +1085,7 @@ class _ShareCard extends StatelessWidget {
     };
   }
 
-  Widget _PollCell(String label, String value, String unit, Color color) {
+  static Widget _pollCell(String label, String value, String unit, Color color) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
