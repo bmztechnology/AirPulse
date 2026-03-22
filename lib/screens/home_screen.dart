@@ -19,7 +19,7 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   // L-08 fix: afficher un snackbar quand AppProvider._error est non-null
-  void _listenForErrors(BuildContext context, AppProvider ap) {
+  void _listenForErrors(BuildContext context, AppProvider ap, AppLocalizations l) {
     if (ap.error == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
@@ -166,7 +166,7 @@ class HomeScreen extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final d = ap.data;
 
-    _listenForErrors(context, ap);
+    _listenForErrors(context, ap, l);
 
     return Scaffold(
       backgroundColor: AppColors.cream,

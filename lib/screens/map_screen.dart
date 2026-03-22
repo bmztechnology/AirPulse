@@ -377,7 +377,7 @@ class _MapScreenState extends State<MapScreen> {
             ),
 
             // ── Slider temporel ────────────────────────────────────────
-            _buildForecastSlider(ap),
+            _buildForecastSlider(ap, l),
 
             // ── Barre météo ────────────────────────────────────────────
             _buildWeatherBar(ap),
@@ -558,7 +558,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // ── Slider prévisions horaires ────────────────────────────────────────────
-  Widget _buildForecastSlider(AppProvider ap) {
+  Widget _buildForecastSlider(AppProvider ap, AppLocalizations l) {
     const hours = [0, 2, 4, 6, 12];
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
