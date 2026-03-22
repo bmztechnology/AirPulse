@@ -252,5 +252,21 @@
       }
     }
   },
-  "notifChannelDesc": "Alertas de calidad del aire"
+  "notifChannelDesc": "Alertas de calidad del aire",
+  "navAi": "IA",
+  "aiScreenTitle": "Análisis IA",
+  "aiKeyRequired": "Clave API Groq requerida",
+  "aiKeyActive": "IA activa — LLaMA 3.3 via Groq",
+  "aiGetKey": "Obtener clave gratuita",
+  "aiSaveKey": "Guardar",
+  "aiKeyDesc": "Clave gratuita en console.groq.com",
+  "aiAnalysisTitle": "Análisis personalizado",
+  "aiContextTitle": "DATOS UTILIZADOS",
+  "aiNoInsight": "El análisis aparecerá tras el siguiente refresco.",
+  "aiNoKeyTitle": "Análisis IA inteligente",
+  "aiNoKeyDesc": "Obtenga una clave Groq gratuita para recibir consejos personalizados.",
+  "aiBestWindow": "Mejor ventana para salir",
+  "aiInsightCard": "🤖 Análisis IA",
+  "aiInsightLoading": "Análisis IA en curso…",
+  "aiInsightFallback": "Añada su clave Groq en la pestaña IA."
 }

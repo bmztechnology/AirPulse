@@ -1,4 +1,7 @@
 // lib/providers/app_provider.dart
+// Open-Meteo : gratuit, sans clé API
+// Nominatim  : reverse geocoding OSM, gratuit, sans clé
+// Groq/LLaMA : analyse IA personnalisée (clé gratuite requise)
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -8,6 +11,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/air_quality_model.dart';
+import '../services/ai_insight_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Singleton notifications
@@ -76,6 +80,13 @@ class AppProvider extends ChangeNotifier {
   double? get lastLat => _lastLat;
   double? get lastLng => _lastLng;
 
+  // ── Analyse IA ────────────────────────────────────────────────────────────
+  String? _aiInsight;
+  bool    _aiLoading = false;
+  String? get aiInsight  => _aiInsight;
+  bool    get aiLoading  => _aiLoading;
+  bool    get hasAiKey   => AiInsightService.hasKey;
+
   List<AqiStation> _stations = [];
   List<AqiStation> get stations => _stations;
 
@@ -128,6 +139,9 @@ class AppProvider extends ChangeNotifier {
       // Charger historique AQI 7 jours
       final qh = prefs.getString('aqi_history');
       if (qh != null) { try { _aqiHistory = (jsonDecode(qh) as List).cast(); } catch (_) {} }
+      // Clé API Groq
+      final groqKey = prefs.getString('groq_api_key');
+      if (groqKey != null && groqKey.isNotEmpty) AiInsightService.apiKey = groqKey;
     } catch (e) {
       debugPrint('AirPulse: prefs load: $e');
     } finally {
@@ -200,6 +214,8 @@ class AppProvider extends ChangeNotifier {
       _error = 'Impossible de récupérer les données.';
     } finally {
       _initialized = true; _loading = false; notifyListeners();
+      // Analyse IA en arrière-plan — non bloquant
+      if (_lastLat != null) unawaited(_refreshAiInsight());
     }
   }
 
@@ -389,16 +405,23 @@ class AppProvider extends ChangeNotifier {
 
     if ((_alerts['aqi_50']  ?? false) && aqi > 50) {
       entries.add({'type': 'aqi_50', 'aqi': aqi, 'station': _data.stationName, 'time': now});
+      // Essayer notification IA, fallback statique
+      final aiNotif = await AiInsightService.getNotifContent(
+        aqi: aqi, profile: _profile,
+        stationName: _data.stationName, lang: _locale.languageCode);
       unawaited(_sendNotification(
-        '💛 AirPulse — ${_localizedAqiQuality(_locale.languageCode, 'moderate')}',
-        'AQI $aqi · ${_data.stationName}',
+        aiNotif?.title ?? '💛 AirPulse — ${_localizedAqiQuality(_locale.languageCode, 'moderate')}',
+        aiNotif?.body  ?? 'AQI $aqi · ${_data.stationName}',
       ));
     }
     if ((_alerts['aqi_100'] ?? true) && aqi > 100) {
       entries.add({'type': 'aqi_100', 'aqi': aqi, 'station': _data.stationName, 'time': now});
+      final aiNotif = await AiInsightService.getNotifContent(
+        aqi: aqi, profile: _profile,
+        stationName: _data.stationName, lang: _locale.languageCode);
       unawaited(_sendNotification(
-        '🔴 AirPulse — ${_localizedAqiQuality(_locale.languageCode, 'poor')}',
-        'AQI $aqi · ${_data.stationName}',
+        aiNotif?.title ?? '🔴 AirPulse — ${_localizedAqiQuality(_locale.languageCode, 'poor')}',
+        aiNotif?.body  ?? 'AQI $aqi · ${_data.stationName}',
       ));
     }
     if ((_alerts['pm25_15'] ?? true) && pm25 > 15) {
@@ -528,6 +551,29 @@ class AppProvider extends ChangeNotifier {
     _personalThreshold = value; notifyListeners();
     try { final p = await SharedPreferences.getInstance(); await p.setDouble('personalThreshold', value); }
     catch (e) { debugPrint('AirPulse: setPersonalThreshold: $e'); }
+  }
+
+  // ── Analyse IA ────────────────────────────────────────────────────────────
+  Future<void> _refreshAiInsight() async {
+    if (!AiInsightService.hasKey) return;
+    _aiLoading = true; notifyListeners();
+    final insight = await AiInsightService.getInsight(
+      data: _data, profile: _profile,
+      lang: _locale.languageCode, history: _aqiHistory,
+    );
+    _aiInsight = insight;
+    _aiLoading = false; notifyListeners();
+  }
+
+  Future<void> setGroqApiKey(String key) async {
+    AiInsightService.apiKey = key.trim();
+    notifyListeners();
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.setString('groq_api_key', key.trim());
+    } catch (e) { debugPrint('AirPulse: setGroqApiKey: $e'); }
+    // Déclencher une analyse immédiate avec la nouvelle clé
+    if (AiInsightService.hasKey && _initialized) unawaited(_refreshAiInsight());
   }
 
   void clearError() { _error = null; notifyListeners(); }

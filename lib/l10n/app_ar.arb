@@ -252,5 +252,21 @@
       }
     }
   },
-  "notifChannelDesc": "تنبيهات جودة الهواء"
+  "notifChannelDesc": "تنبيهات جودة الهواء",
+  "navAi": "ذكاء اصطناعي",
+  "aiScreenTitle": "تحليل الذكاء الاصطناعي",
+  "aiKeyRequired": "مفتاح Groq API مطلوب",
+  "aiKeyActive": "الذكاء الاصطناعي نشط — LLaMA 3.3",
+  "aiGetKey": "احصل على مفتاح مجاني",
+  "aiSaveKey": "حفظ",
+  "aiKeyDesc": "مفتاح مجاني على console.groq.com",
+  "aiAnalysisTitle": "تحليل شخصي",
+  "aiContextTitle": "البيانات المستخدمة",
+  "aiNoInsight": "سيظهر التحليل بعد التحديث التالي.",
+  "aiNoKeyTitle": "تحليل ذكاء اصطناعي ذكي",
+  "aiNoKeyDesc": "احصل على مفتاح Groq مجاني للحصول على نصائح مخصصة.",
+  "aiBestWindow": "أفضل وقت للخروج",
+  "aiInsightCard": "🤖 تحليل ذكاء اصطناعي",
+  "aiInsightLoading": "التحليل جارٍ…",
+  "aiInsightFallback": "أضف مفتاح Groq في تبويب الذكاء الاصطناعي."
 }

@@ -7,6 +7,7 @@ import '../screens/details_screen.dart';
 import '../screens/map_screen.dart';
 import '../screens/alerts_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/ai_screen.dart';
 import '../theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 
@@ -22,7 +23,7 @@ class AppShellState extends State<AppShell> {
   int _currentIndex = 0;
 
   void setTab(int index) {
-    if (index < 0 || index > 4) return;
+    if (index < 0 || index > 5) return;
     setState(() => _currentIndex = index);
   }
 
@@ -31,6 +32,7 @@ class AppShellState extends State<AppShell> {
     DetailsScreen(),
     MapScreen(),
     AlertsScreen(),
+    AiScreen(),
     SettingsScreen(),
   ];
 
@@ -64,6 +66,7 @@ class AppShellState extends State<AppShell> {
               BottomNavigationBarItem(icon: Semantics(label: '', excludeSemantics: true, child: Text('📊', style: TextStyle(fontSize: 20))), label: l.navData),
               BottomNavigationBarItem(icon: Semantics(label: '', excludeSemantics: true, child: Text('🗺️', style: TextStyle(fontSize: 20))), label: l.navMap),
               BottomNavigationBarItem(icon: Semantics(label: '', excludeSemantics: true, child: Text('🔔', style: TextStyle(fontSize: 20))), label: l.navAlerts),
+              BottomNavigationBarItem(icon: Semantics(label: '', excludeSemantics: true, child: Text('🤖', style: TextStyle(fontSize: 20))), label: l.navAi),
               BottomNavigationBarItem(icon: Semantics(label: '', excludeSemantics: true, child: Text('⚙️', style: TextStyle(fontSize: 20))), label: l.navProfile),
             ],
           ),

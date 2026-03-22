@@ -320,5 +320,21 @@
       }
     }
   },
-  "notifChannelDesc": "Air quality alerts"
+  "notifChannelDesc": "Air quality alerts",
+  "navAi": "AI",
+  "aiScreenTitle": "AI Analysis",
+  "aiKeyRequired": "Groq API key required",
+  "aiKeyActive": "AI active — LLaMA 3.3 via Groq",
+  "aiGetKey": "Get free key",
+  "aiSaveKey": "Save",
+  "aiKeyDesc": "Free key at console.groq.com · 14,400 req/day · No card required",
+  "aiAnalysisTitle": "Personalized analysis",
+  "aiContextTitle": "DATA USED",
+  "aiNoInsight": "Analysis will appear after next refresh.",
+  "aiNoKeyTitle": "Intelligent AI analysis",
+  "aiNoKeyDesc": "Get a free Groq key to receive personalized air quality advice based on your profile, current measurements and 24h forecast.",
+  "aiBestWindow": "Best window to go out",
+  "aiInsightCard": "🤖 AI Analysis",
+  "aiInsightLoading": "AI analysis in progress…",
+  "aiInsightFallback": "Add your Groq key in the AI tab to get personalized advice."
 }

@@ -252,5 +252,21 @@
       }
     }
   },
-  "notifChannelDesc": "大気質アラート"
+  "notifChannelDesc": "大気質アラート",
+  "navAi": "AI",
+  "aiScreenTitle": "AI分析",
+  "aiKeyRequired": "Groq APIキーが必要",
+  "aiKeyActive": "AI有効 — LLaMA 3.3",
+  "aiGetKey": "無料キーを取得",
+  "aiSaveKey": "保存",
+  "aiKeyDesc": "console.groq.comで無料キーを取得",
+  "aiAnalysisTitle": "パーソナライズ分析",
+  "aiContextTitle": "使用データ",
+  "aiNoInsight": "次の更新後に分析が表示されます。",
+  "aiNoKeyTitle": "インテリジェントAI分析",
+  "aiNoKeyDesc": "無料のGroqキーを取得してパーソナライズされたアドバイスを受け取ってください。",
+  "aiBestWindow": "外出のベストタイム",
+  "aiInsightCard": "🤖 AI分析",
+  "aiInsightLoading": "AI分析中…",
+  "aiInsightFallback": "AIタブにGroqキーを追加してください。"
 }

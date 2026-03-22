@@ -252,5 +252,21 @@
       }
     }
   },
-  "notifChannelDesc": "Luftqualitätswarnungen"
+  "notifChannelDesc": "Luftqualitätswarnungen",
+  "navAi": "KI",
+  "aiScreenTitle": "KI-Analyse",
+  "aiKeyRequired": "Groq API-Schlüssel erforderlich",
+  "aiKeyActive": "KI aktiv — LLaMA 3.3 via Groq",
+  "aiGetKey": "Kostenlosen Schlüssel holen",
+  "aiSaveKey": "Speichern",
+  "aiKeyDesc": "Kostenloser Schlüssel auf console.groq.com",
+  "aiAnalysisTitle": "Personalisierte Analyse",
+  "aiContextTitle": "VERWENDETE DATEN",
+  "aiNoInsight": "Analyse erscheint nach der nächsten Aktualisierung.",
+  "aiNoKeyTitle": "Intelligente KI-Analyse",
+  "aiNoKeyDesc": "Holen Sie sich einen kostenlosen Groq-Schlüssel für personalisierte Empfehlungen.",
+  "aiBestWindow": "Bestes Fenster zum Ausgehen",
+  "aiInsightCard": "🤖 KI-Analyse",
+  "aiInsightLoading": "KI-Analyse läuft…",
+  "aiInsightFallback": "Fügen Sie Ihren Groq-Schlüssel im KI-Tab hinzu."
 }

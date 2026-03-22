@@ -198,7 +198,7 @@ class HomeScreen extends StatelessWidget {
                           icon: '🔔', onTap: () => _navigate(context, 3)),
                       const SizedBox(width: 8),
                       _IconBtn(
-                          icon: '⚙️', onTap: () => _navigate(context, 4)),
+                          icon: '⚙️', onTap: () => _navigate(context, 5)),
                     ],
                   ),
                 ),

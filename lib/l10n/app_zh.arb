@@ -252,5 +252,21 @@
       }
     }
   },
-  "notifChannelDesc": "空气质量警报"
+  "notifChannelDesc": "空气质量警报",
+  "navAi": "AI",
+  "aiScreenTitle": "AI分析",
+  "aiKeyRequired": "需要Groq API密钥",
+  "aiKeyActive": "AI已激活 — LLaMA 3.3",
+  "aiGetKey": "获取免费密钥",
+  "aiSaveKey": "保存",
+  "aiKeyDesc": "在console.groq.com获取免费密钥",
+  "aiAnalysisTitle": "个性化分析",
+  "aiContextTitle": "使用的数据",
+  "aiNoInsight": "分析将在下次刷新后显示。",
+  "aiNoKeyTitle": "智能AI分析",
+  "aiNoKeyDesc": "获取免费Groq密钥以获得个性化建议。",
+  "aiBestWindow": "最佳外出时间",
+  "aiInsightCard": "🤖 AI分析",
+  "aiInsightLoading": "AI分析中…",
+  "aiInsightFallback": "在AI选项卡中添加您的Groq密钥。"
 }
