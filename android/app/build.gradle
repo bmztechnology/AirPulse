@@ -29,6 +29,18 @@ android {
         jvmTarget = "17"
     }
 
+    // Signing depuis variables d'environnement Codemagic
+    signingConfigs {
+        release {
+            if (System.getenv("CM_KEYSTORE_PATH")) {
+                storeFile     file(System.getenv("CM_KEYSTORE_PATH"))
+                storePassword System.getenv("CM_KEYSTORE_PASSWORD")
+                keyAlias      System.getenv("CM_KEY_ALIAS")
+                keyPassword   System.getenv("CM_KEY_PASSWORD")
+            }
+        }
+    }
+
     defaultConfig {
         applicationId "app.airpulse"
         minSdk 21
@@ -44,7 +56,10 @@ android {
         release {
             minifyEnabled false
             shrinkResources false
-            signingConfig signingConfigs.debug
+            // Utilise release signing si disponible, sinon debug (local)
+            signingConfig System.getenv("CM_KEYSTORE_PATH")
+                ? signingConfigs.release
+                : signingConfigs.debug
         }
     }
 }
