@@ -378,6 +378,9 @@ class _MapScreenState extends State<MapScreen> {
             // ── Slider temporel ────────────────────────────────────────
             _buildForecastSlider(ap),
 
+            // ── Barre météo ────────────────────────────────────────────
+            _buildWeatherBar(ap),
+
             // ── Liste stations ─────────────────────────────────────────
             Expanded(
               flex: 3,
@@ -418,6 +421,112 @@ class _MapScreenState extends State<MapScreen> {
         ),
       ),
     );
+  }
+
+  // ── Barre météo ───────────────────────────────────────────────────────────
+  Widget _buildWeatherBar(AppProvider ap) {
+    final w = ap.data.weather;
+    // Si pas encore de données météo réelles (mock par défaut)
+    final hasData = ap.initialized && ap.lastLat != null;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.cream2,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _weatherCell(_tempIcon(w.tempC),    '${w.tempC.toStringAsFixed(0)}°C'),
+          _weatherDivider(),
+          _weatherCell(_humidIcon(w.humidity), '${w.humidity}%'),
+          _weatherDivider(),
+          _weatherCell(_windIcon(w.windKmh),  '${w.windKmh.toStringAsFixed(0)} km/h'),
+          _weatherDivider(),
+          _weatherCell(_windDirIcon(w.windDir), w.windDir),
+          _weatherDivider(),
+          _weatherCell(_uvIcon(w.uvIndex),    'UV ${w.uvIndex}'),
+          _weatherDivider(),
+          _weatherCell(_visIcon(w.visibilityKm), '${w.visibilityKm.toStringAsFixed(0)} km'),
+          _weatherDivider(),
+          _weatherCell(_pressureIcon(w.pressureHpa), '${w.pressureHpa} hPa'),
+        ],
+      ),
+    );
+  }
+
+  Widget _weatherCell(String icon, String label) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(icon, style: const TextStyle(fontSize: 16)),
+      const SizedBox(height: 2),
+      Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600,
+          color: AppColors.ink2)),
+    ],
+  );
+
+  Widget _weatherDivider() => Container(
+    width: 1, height: 28,
+    color: AppColors.border,
+    margin: const EdgeInsets.symmetric(horizontal: 2),
+  );
+
+  // ── Icônes météo contextuelles ────────────────────────────────────────────
+  String _tempIcon(double t) {
+    if (t < 0)   return '🥶';
+    if (t < 10)  return '🌨️';
+    if (t < 18)  return '🌤️';
+    if (t < 28)  return '☀️';
+    return '🔥';
+  }
+
+  String _humidIcon(int h) {
+    if (h < 30) return '🏜️';
+    if (h < 60) return '💧';
+    if (h < 80) return '🌧️';
+    return '🌊';
+  }
+
+  String _windIcon(double v) {
+    if (v < 5)  return '🍃';
+    if (v < 20) return '💨';
+    if (v < 40) return '🌬️';
+    return '🌪️';
+  }
+
+  String _windDirIcon(String dir) {
+    const map = {
+      'N': '⬆️',  'NNE': '↗️', 'NE': '↗️',  'ENE': '➡️',
+      'E': '➡️',  'ESE': '↘️', 'SE': '↘️',  'SSE': '⬇️',
+      'S': '⬇️',  'SSO': '↙️', 'SO': '↙️',  'OSO': '⬅️',
+      'O': '⬅️',  'ONO': '↖️', 'NO': '↖️',  'NNO': '⬆️',
+    };
+    return map[dir] ?? '🧭';
+  }
+
+  String _uvIcon(int uv) {
+    if (uv <= 2)  return '🌥️';
+    if (uv <= 5)  return '🌤️';
+    if (uv <= 7)  return '☀️';
+    if (uv <= 10) return '🌞';
+    return '☢️';
+  }
+
+  String _visIcon(double km) {
+    if (km < 1)  return '🌫️';
+    if (km < 5)  return '😶‍🌫️';
+    if (km < 10) return '🌤️';
+    return '👁️';
+  }
+
+  String _pressureIcon(int hpa) {
+    if (hpa < 1000) return '🌧️';
+    if (hpa < 1013) return '🌥️';
+    if (hpa < 1022) return '⛅';
+    return '☀️';
   }
 
   // ── Badge zones à éviter ──────────────────────────────────────────────────
