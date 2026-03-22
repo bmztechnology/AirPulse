@@ -54,8 +54,10 @@ class _MapScreenState extends State<MapScreen> {
     super.dispose();
   }
 
-  void _centerMap() {
-    _mapCtrl.move(const LatLng(48.856, 2.352), 11);
+  void _centerMap(AppProvider ap) {
+    final lat = ap.lastLat ?? 48.856;
+    final lng = ap.lastLng ?? 2.352;
+    _mapCtrl.move(LatLng(lat, lng), 11);
   }
 
   @override
@@ -78,7 +80,7 @@ class _MapScreenState extends State<MapScreen> {
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.ink)),
                   const Spacer(),
                   GestureDetector(
-                    onTap: _centerMap,
+                    onTap: () => _centerMap(ap),
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
@@ -131,7 +133,7 @@ class _MapScreenState extends State<MapScreen> {
               child: FlutterMap(
                 mapController: _mapCtrl,
                 options: const MapOptions(
-                  initialCenter: LatLng(48.856, 2.352),
+                  initialCenter: LatLng(ap.lastLat ?? 48.856, ap.lastLng ?? 2.352),
                   initialZoom: 11,
                   maxZoom: 18,
                   minZoom: 5,

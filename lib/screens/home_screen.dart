@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../providers/app_provider.dart';
 import '../models/air_quality_model.dart';
 import '../theme/app_theme.dart';
@@ -99,9 +100,8 @@ class HomeScreen extends StatelessWidget {
 
     _listenForErrors(context, ap);
 
-    // Premier chargement automatique au démarrage
-    if (!ap.loading && ap.data.stationSource == 'AirParif' &&
-        ap.locationName == 'Localisation en cours…') {
+    // Premier chargement automatique — une seule fois via le flag initialized
+    if (!ap.initialized && !ap.loading) {
       WidgetsBinding.instance.addPostFrameCallback((_) => ap.refreshLocation());
     }
 
@@ -792,11 +792,7 @@ class _ShareSheetState extends State<ShareSheet> {
   }
 
   void _share(String target, AirQualityData d, AppLocalizations l) {
-    // share_plus is declared in pubspec.yaml but the import must be added
-    // once the package is confirmed available. For now we fall back to copy.
-    // To enable: import 'package:share_plus/share_plus.dart';
-    //            Share.share(_buildShareText(d, l));
-    _copy(d, l);
+    Share.share(_buildShareText(d, l));
   }
 
   @override
