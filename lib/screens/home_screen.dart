@@ -81,7 +81,64 @@ class HomeScreen extends StatelessWidget {
         AqiStatus.hazardous => l.statusHazardous,
       };
 
-  /// FIX-BUG-2: Now correctly looks for AppShellState (public, from main.dart).
+  /// Insights dynamiques générés depuis les vraies données AQI/météo
+  List<Widget> _buildDynamicInsights(AirQualityData d, AppLocalizations l) {
+    final aqi  = d.aqi;
+    final pm25 = d.pm25;
+    final no2  = d.no2;
+    final o3   = d.o3;
+    final temp = d.weather.tempC;
+    final hum  = d.weather.humidity;
+    final uv   = d.weather.uvIndex;
+    final wind = d.weather.windKmh;
+
+    // 🫁 Respiratoire
+    final String respText;
+    if (pm25 == 0.0) {
+      respText = 'Données PM2.5 en cours de chargement…';
+    } else if (pm25 <= 15) {
+      respText = 'PM2.5 à ${pm25.toStringAsFixed(1)} μg/m³ — sous le seuil OMS (15 μg/m³). Effort physique sans risque respiratoire.';
+    } else if (pm25 <= 35) {
+      respText = 'PM2.5 à ${pm25.toStringAsFixed(1)} μg/m³ — seuil OMS dépassé. Limitez les efforts intenses en extérieur.';
+    } else {
+      respText = 'PM2.5 à ${pm25.toStringAsFixed(1)} μg/m³ — niveau élevé. Évitez toute activité physique prolongée dehors.';
+    }
+
+    // ❤️ Cardiovasculaire
+    final String cardioText;
+    if (no2 == 0.0) {
+      cardioText = 'Données NO₂ en cours de chargement…';
+    } else if (no2 <= 25) {
+      cardioText = 'NO₂ à ${no2.toStringAsFixed(0)} μg/m³ — sous le seuil OMS (25 μg/m³). Risque cardiovasculaire faible.';
+    } else if (no2 <= 40) {
+      cardioText = 'NO₂ à ${no2.toStringAsFixed(0)} μg/m³ — attention recommandée pour les personnes cardiaques.';
+    } else {
+      cardioText = 'NO₂ à ${no2.toStringAsFixed(0)} μg/m³ — seuil OMS dépassé. Les personnes cardiaques doivent éviter les zones de trafic.';
+    }
+
+    // 🌿 Ozone
+    final String o3Text;
+    if (o3 <= 60) {
+      o3Text = 'O₃ à ${o3.toStringAsFixed(0)} μg/m³ — niveau faible. Pas de risque lié à l\'ozone.';
+    } else if (o3 <= 100) {
+      o3Text = 'O₃ à ${o3.toStringAsFixed(0)} μg/m³ — niveau modéré. Limitez les activités intenses en plein soleil.';
+    } else {
+      o3Text = 'O₃ à ${o3.toStringAsFixed(0)} μg/m³ — niveau élevé. Évitez les efforts extérieurs en milieu de journée.';
+    }
+
+    // 🌤️ Météo & dispersion
+    final String meteoText;
+    final dispersion = wind >= 15 ? 'Bon brassage atmosphérique (vent ${wind.toStringAsFixed(0)} km/h).' : 'Vent faible — les polluants se dispersent peu.';
+    final uvTip = uv >= 7 ? ' UV élevé ($uv/10) — protection solaire recommandée.' : '';
+    meteoText = '${temp.toStringAsFixed(0)}°C · Humidité $hum% · UV $uv/10. $dispersion$uvTip';
+
+    return [
+      InsightCard(icon: '🫁', title: l.insightRespTitle,    text: respText),
+      InsightCard(icon: '❤️', title: l.insightCardioTitle,  text: cardioText),
+      InsightCard(icon: '🌿', title: l.insightPollenTitle,  text: o3Text),
+      InsightCard(icon: '🌤️', title: l.insightWeatherTitle, text: meteoText),
+    ];
+  }
   /// Previously pointed to _MainShellState which was never in the widget tree.
   void _navigate(BuildContext context, int index) {
     context.findAncestorStateOfType<AppShellState>()?.setTab(index);
@@ -320,24 +377,9 @@ class HomeScreen extends StatelessWidget {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
                 sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    InsightCard(
-                        icon: '🫁',
-                        title: l.insightRespTitle,
-                        text: l.insightRespText),
-                    InsightCard(
-                        icon: '❤️',
-                        title: l.insightCardioTitle,
-                        text: l.insightCardioText),
-                    InsightCard(
-                        icon: '🌿',
-                        title: l.insightPollenTitle,
-                        text: l.insightPollenText),
-                    InsightCard(
-                        icon: '🌤️',
-                        title: l.insightWeatherTitle,
-                        text: l.insightWeatherText),
-                  ]),
+                  delegate: SliverChildListDelegate(
+                    _buildDynamicInsights(d, l),
+                  ),
                 ),
               ),
             ],

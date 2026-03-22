@@ -57,10 +57,11 @@ class DetailsScreen extends StatelessWidget {
                   crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 1.6,
                 ),
                 delegate: SliverChildListDelegate([
-                  PollutantCard(label: 'PM 1.0',  value: d.pm1.toStringAsFixed(1),  unit: 'μg/m³', aqi: (d.aqi * 0.4).toInt()),
                   PollutantCard(label: l.pm25Label, value: d.pm25.toStringAsFixed(1), unit: 'μg/m³', aqi: d.aqi),
                   PollutantCard(label: l.pm10Label, value: d.pm10.toStringAsFixed(1), unit: 'μg/m³', aqi: (d.aqi * 0.6).toInt()),
-                  PollutantCard(label: 'PM 4.0',  value: d.pm4.toStringAsFixed(1),  unit: 'μg/m³', aqi: (d.aqi * 0.5).toInt()),
+                  // PM1/PM4 masqués si 0 — Open-Meteo ne les fournit pas
+                  if (d.pm1 > 0) PollutantCard(label: 'PM 1.0', value: d.pm1.toStringAsFixed(1), unit: 'μg/m³', aqi: (d.aqi * 0.4).toInt()),
+                  if (d.pm4 > 0) PollutantCard(label: 'PM 4.0', value: d.pm4.toStringAsFixed(1), unit: 'μg/m³', aqi: (d.aqi * 0.5).toInt()),
                 ]),
               ),
             ),
@@ -76,10 +77,10 @@ class DetailsScreen extends StatelessWidget {
                 delegate: SliverChildListDelegate([
                   PollutantCard(label: l.no2Label, value: d.no2.toStringAsFixed(0), unit: 'μg/m³', aqi: (d.aqi * 0.9).toInt()),
                   PollutantCard(label: l.o3Label,  value: d.o3.toStringAsFixed(0),  unit: 'μg/m³', aqi: (d.aqi * 0.6).toInt()),
-                  PollutantCard(label: l.so2Label, value: d.so2.toStringAsFixed(1), unit: 'μg/m³', aqi: (d.aqi * 0.1).toInt()),
                   PollutantCard(label: l.coLabel,  value: d.co.toStringAsFixed(2),  unit: 'mg/m³', aqi: (d.aqi * 0.05).toInt()),
-                  PollutantCard(label: 'NOx',  value: (d.no2 * 1.2).toStringAsFixed(0), unit: 'μg/m³', aqi: (d.aqi * 0.8).toInt()),
-                  PollutantCard(label: l.vocLabel, value: d.voc.toStringAsFixed(0), unit: 'μg/m³', aqi: (d.aqi * 0.3).toInt()), // FIX-MAJOR-03
+                  // SO2 et VOC masqués si 0 — non fournis par Open-Meteo current
+                  if (d.so2 > 0) PollutantCard(label: l.so2Label, value: d.so2.toStringAsFixed(1), unit: 'μg/m³', aqi: (d.aqi * 0.1).toInt()),
+                  if (d.voc  > 0) PollutantCard(label: l.vocLabel, value: d.voc.toStringAsFixed(0), unit: 'μg/m³', aqi: (d.aqi * 0.3).toInt()),
                 ]),
               ),
             ),
