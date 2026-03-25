@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../widgets/aqi_widgets.dart';
 import '../l10n/app_localizations.dart';
 import '../services/ai_insight_service.dart';
+import 'package:shimmer/shimmer.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -158,8 +159,17 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
 
-            // ── Layer selector ─────────────────────────────────────────
-            SizedBox(
+            // ── Loading Shimmer ou Contenu ─────────────────────────────
+            if (ap.loading && !ap.initialized)
+              const Expanded(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: _MapShimmer(),
+                ),
+              )
+            else ...[
+              // ── Layer selector ─────────────────────────────────────────
+              SizedBox(
               height: 44,
               child: ListView(
                 scrollDirection: Axis.horizontal,
@@ -418,6 +428,7 @@ class _MapScreenState extends State<MapScreen> {
                 ],
               ),
             ),
+            ], // Fin condition shimmer
           ],
         ),
       ),
@@ -835,4 +846,47 @@ class _StationPopupState extends State<_StationPopup> {
           color: AppColors.ink3, fontWeight: FontWeight.w600)),
     ]),
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Loading Skeleton (Shimmer)
+// ─────────────────────────────────────────────────────────────────────────────
+class _MapShimmer extends StatelessWidget {
+  const _MapShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: AppColors.cream2,
+      highlightColor: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Layer selector
+          Container(height: 38, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22))),
+          const SizedBox(height: 16),
+          // Map placeholder
+          Expanded(
+            flex: 5,
+            child: Container(decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24))),
+          ),
+          const SizedBox(height: 16),
+          // Weather bar
+          Container(height: 56, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14))),
+          const SizedBox(height: 16),
+          // Stations list
+          Expanded(
+            flex: 3,
+            child: Column(
+              children: List.generate(3, (i) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                height: 56,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+              )),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

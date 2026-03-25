@@ -8,12 +8,15 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shimmer/shimmer.dart';
 import '../providers/app_provider.dart';
 import '../models/air_quality_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/aqi_widgets.dart';
 import '../l10n/app_localizations.dart';
 import '../navigation/app_shell.dart' show AppShellState;
+import '../screens/details_screen.dart';
+import '../screens/alerts_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -169,12 +172,12 @@ class HomeScreen extends StatelessWidget {
     _listenForErrors(context, ap, l);
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: ap.refreshLocation,
           color: AppColors.accent,
-          backgroundColor: AppColors.cream,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           child: CustomScrollView(
             // FIX-MINOR-10: Required for RefreshIndicator to trigger on short content
             physics: const AlwaysScrollableScrollPhysics(),
@@ -195,10 +198,10 @@ class HomeScreen extends StatelessWidget {
                       const Spacer(),
                       // FIX-BUG-1: _IconBtn is now defined at bottom of this file.
                       _IconBtn(
-                          icon: '🔔', onTap: () => _navigate(context, 3)),
+                          icon: '🔔', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsScreen()))),
                       const SizedBox(width: 8),
                       _IconBtn(
-                          icon: '⚙️', onTap: () => _navigate(context, 5)),
+                          icon: '⚙️', onTap: () => _navigate(context, 3)),
                     ],
                   ),
                 ),
@@ -240,8 +243,17 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
 
-              // ── Location bar ───────────────────────────────────────────
-              SliverToBoxAdapter(
+              // ── Loading Shimmer ou Contenu ─────────────────────────────
+              if (ap.loading && !ap.initialized)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    child: _HomeShimmer(),
+                  ),
+                )
+              else ...[
+                // ── Location bar ───────────────────────────────────────────
+                SliverToBoxAdapter(
                 child: GestureDetector(
                   onTap: ap.refreshLocation,
                   child: Container(
@@ -308,7 +320,7 @@ class HomeScreen extends StatelessWidget {
                 child: SectionHeader(
                   title: l.sectionPollutants,
                   actionLabel: l.seeAll,
-                  onAction: () => _navigate(context, 1),
+                  onAction: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen())),
                 ),
               ),
               SliverPadding(
@@ -327,37 +339,37 @@ class HomeScreen extends StatelessWidget {
                         value: d.pm25.toStringAsFixed(1),
                         unit: 'μg/m³',
                         aqi: d.aqi,
-                        onTap: () => _navigate(context, 1)),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
                     PollutantCard(
                         label: l.pm10Label,
-                        value: d.pm10.toStringAsFixed(1),
+                        value: d.pm10?.toStringAsFixed(1) ?? 'N/A',
                         unit: 'μg/m³',
                         aqi: (d.aqi * 0.6).toInt(),
-                        onTap: () => _navigate(context, 1)),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
                     PollutantCard(
                         label: l.no2Label,
                         value: d.no2.toStringAsFixed(0),
                         unit: 'μg/m³',
                         aqi: (d.aqi * 0.85).toInt(),
-                        onTap: () => _navigate(context, 1)),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
                     PollutantCard(
                         label: l.o3Label,
                         value: d.o3.toStringAsFixed(0),
                         unit: 'μg/m³',
                         aqi: (d.aqi * 0.6).toInt(),
-                        onTap: () => _navigate(context, 1)),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
                     PollutantCard(
                         label: l.so2Label,
                         value: d.so2.toStringAsFixed(1),
                         unit: 'μg/m³',
                         aqi: (d.aqi * 0.1).toInt(),
-                        onTap: () => _navigate(context, 1)),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
                     PollutantCard(
                         label: l.coLabel,
                         value: d.co.toStringAsFixed(2),
                         unit: 'mg/m³',
                         aqi: (d.aqi * 0.05).toInt(),
-                        onTap: () => _navigate(context, 1)),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
                   ]),
                 ),
               ),
@@ -373,7 +385,7 @@ class HomeScreen extends StatelessWidget {
                 child: _MiniMapCard(
                   // FIX-BUG-8: label is now localised via ARB key.
                   label: l.mapExplore,
-                  onTap: () => _navigate(context, 2),
+                  onTap: () => _navigate(context, 1),
                 ),
               ),
 
@@ -394,6 +406,7 @@ class HomeScreen extends StatelessWidget {
                   ]),
                 ),
               ),
+              ], // Fin du else (contenu principal)
             ],
           ),
         ),
@@ -1147,7 +1160,7 @@ class _ShareCard extends StatelessWidget {
             children: [
               _pollCell('PM2.5', data.pm25.toStringAsFixed(1), 'μg/m³', color),
               const SizedBox(width: 8),
-              _pollCell('PM10',  data.pm10.toStringAsFixed(1), 'μg/m³', AppColors.ink2),
+              _pollCell('PM10',  data.pm10?.toStringAsFixed(1) ?? 'N/A', 'μg/m³', AppColors.ink2),
               const SizedBox(width: 8),
               _pollCell('NO₂',   data.no2.toStringAsFixed(0),  'μg/m³', AppColors.ink2),
               const SizedBox(width: 8),
@@ -1222,6 +1235,47 @@ class _ShareCard extends StatelessWidget {
                 style: const TextStyle(fontSize: 8, color: AppColors.ink3)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Loading Skeleton (Shimmer)
+// ─────────────────────────────────────────────────────────────────────────────
+class _HomeShimmer extends StatelessWidget {
+  const _HomeShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: AppColors.cream2,
+      highlightColor: Colors.white,
+      child: Column(
+        children: [
+          // Location bar
+          Container(height: 48, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14))),
+          const SizedBox(height: 10),
+          // Main card
+          Container(height: 200, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24))),
+          const SizedBox(height: 20),
+          // Pollutants grid
+          Row(
+            children: [
+              Expanded(child: Container(height: 90, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)))),
+              const SizedBox(width: 10),
+              Expanded(child: Container(height: 90, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)))),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(child: Container(height: 90, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)))),
+              const SizedBox(width: 10),
+              Expanded(child: Container(height: 90, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)))),
+            ],
+          ),
+        ],
       ),
     );
   }

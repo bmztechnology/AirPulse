@@ -7,7 +7,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/air_quality_model.dart';
@@ -139,13 +141,43 @@ class AppProvider extends ChangeNotifier {
       // Charger historique AQI 7 jours
       final qh = prefs.getString('aqi_history');
       if (qh != null) { try { _aqiHistory = (jsonDecode(qh) as List).cast(); } catch (_) {} }
-      // Clé API Groq
-      final groqKey = prefs.getString('groq_api_key');
-      if (groqKey != null && groqKey.isNotEmpty) AiInsightService.apiKey = groqKey;
+      // Clé API Groq — migrate from SharedPrefs to SecureStorage
+      await _migrateAndLoadGroqKey(prefs);
     } catch (e) {
       debugPrint('AirPulse: prefs load: $e');
     } finally {
       notifyListeners();
+    }
+  }
+
+  // ── Groq API key: secure storage with SharedPrefs migration ────────────
+  Future<void> _migrateAndLoadGroqKey(SharedPreferences prefs) async {
+    const secure = FlutterSecureStorage();
+    try {
+      // 1. Try reading from secure storage first
+      String? key = await secure.read(key: 'groq_api_key');
+
+      // 2. If not in secure storage, check SharedPrefs (legacy)
+      if ((key == null || key.isEmpty) && prefs.containsKey('groq_api_key')) {
+        key = prefs.getString('groq_api_key');
+        if (key != null && key.isNotEmpty) {
+          // Migrate to secure storage
+          await secure.write(key: 'groq_api_key', value: key);
+          await prefs.remove('groq_api_key');
+          debugPrint('AirPulse: Groq key migrated to secure storage');
+        }
+      }
+
+      if (key != null && key.isNotEmpty) {
+        AiInsightService.apiKey = key;
+      }
+    } catch (e) {
+      debugPrint('AirPulse: _migrateAndLoadGroqKey: $e');
+      // Fallback: try SharedPrefs if secure storage fails
+      final fallback = prefs.getString('groq_api_key');
+      if (fallback != null && fallback.isNotEmpty) {
+        AiInsightService.apiKey = fallback;
+      }
     }
   }
 
@@ -202,16 +234,22 @@ class AppProvider extends ChangeNotifier {
         await _fetchCityName(pos.latitude, pos.longitude);
         await _fetchOpenMeteoAqi(pos.latitude, pos.longitude);
         await _fetchOpenMeteoWeather(pos.latitude, pos.longitude);
-        _buildNearbyStations(pos.latitude, pos.longitude);
+        await _buildNearbyStations(pos.latitude, pos.longitude);
         unawaited(_saveAqiHistory());
         unawaited(_checkAndTriggerAlerts());
+        unawaited(_saveToCache());
       } else {
         _locationName = _locationName.isEmpty || _locationName == '…'
             ? 'Position GPS requise' : _locationName;
       }
     } catch (e) {
       debugPrint('AirPulse: refresh: $e');
-      _error = 'Impossible de récupérer les données.';
+      final cached = await _loadFromCache();
+      if (cached) {
+        _error = 'Mode hors ligne (données en cache)';
+      } else {
+        _error = 'Impossible de récupérer les données (offline).';
+      }
     } finally {
       _initialized = true; _loading = false; notifyListeners();
       // Analyse IA en arrière-plan — non bloquant
@@ -241,12 +279,43 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+  // ── Offline Caching ────────────────────────────────────────────────────────
+  Future<void> _saveToCache() async {
+    try {
+      final box = await Hive.openBox('aqi_cache');
+      await box.put('last_data', _data.toJson());
+      await box.put('last_lat', _lastLat);
+      await box.put('last_lng', _lastLng);
+      await box.put('location_name', _locationName);
+    } catch (e) {
+      debugPrint('AirPulse: Hive save error: $e');
+    }
+  }
+
+  Future<bool> _loadFromCache() async {
+    try {
+      final box = await Hive.openBox('aqi_cache');
+      final raw = box.get('last_data');
+      if (raw != null) {
+        _data = AirQualityData.fromJson(Map<String, dynamic>.from(raw as Map));
+        _lastLat = box.get('last_lat') as double?;
+        _lastLng = box.get('last_lng') as double?;
+        final locName = box.get('location_name') as String?;
+        if (locName != null) _locationName = locName;
+        return true;
+      }
+    } catch (e) {
+      debugPrint('AirPulse: Hive load error: $e');
+    }
+    return false;
+  }
+
   // ── Open-Meteo AQI + prévisions + POLLEN ──────────────────────────────────
   Future<void> _fetchOpenMeteoAqi(double lat, double lng) async {
     final uri = Uri.parse(
       'https://air-quality-api.open-meteo.com/v1/air-quality'
       '?latitude=$lat&longitude=$lng'
-      '&current=pm2_5,nitrogen_dioxide,ozone,carbon_monoxide'
+      '&current=pm2_5,pm10,nitrogen_dioxide,ozone,carbon_monoxide,sulphur_dioxide'
       '&hourly=pm2_5'
       '&daily=grass_pollen,tree_pollen,mould_spores'
       '&forecast_days=2',
@@ -259,9 +328,12 @@ class AppProvider extends ChangeNotifier {
     num c(String k) => (cur[k] as num?) ?? 0;
 
     final pm25 = c('pm2_5').toDouble();
+    final pm10Raw = cur['pm10'] as num?;  // may be null from API
+    final pm10 = pm10Raw?.toDouble();     // null = N/A, never estimated
     final no2  = c('nitrogen_dioxide').toDouble();
     final o3   = c('ozone').toDouble();
     final co   = c('carbon_monoxide').toDouble() / 1000;
+    final so2  = c('sulphur_dioxide').toDouble();
     final aqi  = _compositeAqi(pm25: pm25, no2: no2, o3: o3, co: co);
 
     // Prévisions PM2.5 horaires
@@ -309,8 +381,8 @@ class AppProvider extends ChangeNotifier {
     }
 
     _data = AirQualityData(
-      aqi: aqi, pm25: pm25, pm10: pm25 * 1.8, no2: no2,
-      o3: o3, so2: 0, co: co,
+      aqi: aqi, pm25: pm25, pm10: pm10, no2: no2,
+      o3: o3, so2: so2, co: co,
       updatedAt: DateTime.now(), stationName: _locationName,
       stationSource: 'Open-Meteo', lat: lat, lng: lng,
       weather: _data.weather, pollen: pollen, forecast: forecast,
@@ -374,24 +446,63 @@ class AppProvider extends ChangeNotifier {
     } catch (e) { debugPrint('AirPulse: saveAqiHistory: $e'); }
   }
 
-  // ── Stations proches ───────────────────────────────────────────────────────
-  void _buildNearbyStations(double lat, double lng) {
+  // ── Stations proches (API WAQI réelle) ────────────────────────────────────
+  Future<void> _buildNearbyStations(double lat, double lng) async {
+    try {
+      // Bounding box ~50km autour du user
+      final lat1 = lat - 0.5;
+      final lng1 = lng - 0.5;
+      final lat2 = lat + 0.5;
+      final lng2 = lng + 0.5;
+      final uri = Uri.parse(
+          'https://api.waqi.info/map/bounds/?token=demo&latlng=$lat1,$lng1,$lat2,$lng2');
+      final resp = await http.get(uri).timeout(const Duration(seconds: 10));
+      
+      if (resp.statusCode == 200) {
+        final json = jsonDecode(resp.body) as Map<String, dynamic>;
+        if (json['status'] == 'ok') {
+          final data = json['data'] as List<dynamic>? ?? [];
+          _stations = data.take(15).map((s) {
+            final st = s as Map<String, dynamic>;
+            final stName = st['station']?['name']?.toString() ?? 'Station';
+            final stAqiStr = st['aqi']?.toString() ?? '0';
+            final stAqi = int.tryParse(stAqiStr) ?? 0;
+            final stLat = (st['lat'] as num?)?.toDouble() ?? 0.0;
+            final stLng = (st['lon'] as num?)?.toDouble() ?? 0.0;
+            
+            return AqiStation(
+              name: stName,
+              lat: stLat,
+              lng: stLng,
+              aqi: stAqi <= 0 ? 1 : stAqi, // ignorer <= 0
+              pm25: stAqi * 0.19,
+              pm10: stAqi * 0.45,
+              no2: stAqi * 0.9,
+              o3: (140 - stAqi).clamp(30, 120).toDouble(),
+              source: 'WAQI',
+            );
+          }).where((s) => s.aqi > 0).toList();
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('AirPulse: WAQI bounds fallback: $e');
+    }
+
+    // Fallback: stations minimales générées si l'API échoue
     final base = _data.aqi;
     final city = _locationName.split(',').first.trim();
     final offsets = [
       (dlat:  0.009, dlng:  0.013, delta: -8,  label: '1 km N'),
       (dlat: -0.013, dlng: -0.009, delta:  5,  label: '1.5 km S'),
       (dlat:  0.022, dlng: -0.018, delta:  12, label: '2.5 km NO'),
-      (dlat: -0.007, dlng:  0.027, delta: -3,  label: '2 km E'),
-      (dlat:  0.031, dlng:  0.009, delta:  18, label: '3.5 km NE'),
-      (dlat: -0.027, dlng:  0.022, delta: -12, label: '3 km SE'),
     ];
     _stations = offsets.map((o) {
       final aqi = (base + o.delta).clamp(1, 500);
       return AqiStation(
         name: '$city — ${o.label}', lat: lat + o.dlat, lng: lng + o.dlng,
         aqi: aqi, pm25: aqi * 0.19, pm10: aqi * 0.45, no2: aqi * 0.9,
-        o3: (140 - aqi).clamp(30, 120).toDouble(), source: 'Open-Meteo',
+        o3: (140 - aqi).clamp(30, 120).toDouble(), source: 'Open-Meteo Fallback',
       );
     }).toList();
   }
@@ -569,8 +680,12 @@ class AppProvider extends ChangeNotifier {
     AiInsightService.apiKey = key.trim();
     notifyListeners();
     try {
+      // Store in secure storage (encrypted)
+      const secure = FlutterSecureStorage();
+      await secure.write(key: 'groq_api_key', value: key.trim());
+      // Remove from SharedPreferences if it was there (migration cleanup)
       final p = await SharedPreferences.getInstance();
-      await p.setString('groq_api_key', key.trim());
+      if (p.containsKey('groq_api_key')) await p.remove('groq_api_key');
     } catch (e) { debugPrint('AirPulse: setGroqApiKey: $e'); }
     // Déclencher une analyse immédiate avec la nouvelle clé
     if (AiInsightService.hasKey && _initialized) unawaited(_refreshAiInsight());

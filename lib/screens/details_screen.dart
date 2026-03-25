@@ -58,7 +58,7 @@ class DetailsScreen extends StatelessWidget {
                 ),
                 delegate: SliverChildListDelegate([
                   PollutantCard(label: l.pm25Label, value: d.pm25.toStringAsFixed(1), unit: 'μg/m³', aqi: d.aqi),
-                  PollutantCard(label: l.pm10Label, value: d.pm10.toStringAsFixed(1), unit: 'μg/m³', aqi: (d.aqi * 0.6).toInt()),
+                  PollutantCard(label: l.pm10Label, value: d.pm10?.toStringAsFixed(1) ?? 'N/A', unit: 'μg/m³', aqi: (d.aqi * 0.6).toInt()),
                   // PM1/PM4 masqués si 0 — Open-Meteo ne les fournit pas
                   if (d.pm1 > 0) PollutantCard(label: 'PM 1.0', value: d.pm1.toStringAsFixed(1), unit: 'μg/m³', aqi: (d.aqi * 0.4).toInt()),
                   if (d.pm4 > 0) PollutantCard(label: 'PM 4.0', value: d.pm4.toStringAsFixed(1), unit: 'μg/m³', aqi: (d.aqi * 0.5).toInt()),

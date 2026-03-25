@@ -7,7 +7,7 @@
 #ifndef GeneratedPluginRegistrant_h
 #define GeneratedPluginRegistrant_h
 
-#import <Flutter/FlutterPlugin.h>
+#import <Flutter/Flutter.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
