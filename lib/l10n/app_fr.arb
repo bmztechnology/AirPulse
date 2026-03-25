@@ -98,6 +98,35 @@
   "settingsAbout": "À propos",
   "settingsVersion": "AirPulse v1.0.0",
   "settingsVersionDesc": "Données gratuites, sans pub",
+  "airFootprintTitle": "Empreinte Air",
+  "airFootprintHealthScore": "SCORE SANTÉ",
+  "airFootprintNoData": "Aucune donnée d'exposition enregistrée.",
+  "airFootprintCigarettes": "{count} cigarettes",
+  "@airFootprintCigarettes": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "airFootprintCigaretteDesc": "Équivalent microparticules respirées",
+  "airFootprintOutdoorTime": "{hours}h passées dehors",
+  "@airFootprintOutdoorTime": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "airFootprintAvgAqiSubi": "AQI moyen subi : {aqi}",
+  "@airFootprintAvgAqiSubi": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      }
+    }
+  },
+  "airFootprintLast7Days": "7 DERNIERS JOURS",
   "settingsMethodology": "Méthodologie",
   "settingsMethodologyDesc": "Basé sur standards OMS 2021",
   "insightRespTitle": "Capacité respiratoire",

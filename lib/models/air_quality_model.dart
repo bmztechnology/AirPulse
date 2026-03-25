@@ -269,6 +269,25 @@ class AqiStation {
 
   AqiStatus get status => aqiStatusFrom(aqi);
 
+  Map<String, dynamic> toJson() => {
+    'name': name, 'lat': lat, 'lng': lng, 'aqi': aqi,
+    'pm25': pm25, 'pm10': pm10, 'no2': no2, 'o3': o3,
+    'source': source, 'windKmh': windKmh,
+  };
+
+  factory AqiStation.fromJson(Map<String, dynamic> json) => AqiStation(
+    name: json['name'] as String,
+    lat: (json['lat'] as num).toDouble(),
+    lng: (json['lng'] as num).toDouble(),
+    aqi: json['aqi'] as int,
+    pm25: (json['pm25'] as num).toDouble(),
+    pm10: (json['pm10'] as num).toDouble(),
+    no2: (json['no2'] as num).toDouble(),
+    o3: (json['o3'] as num).toDouble(),
+    source: json['source'] as String,
+    windKmh: (json['windKmh'] as num).toDouble(),
+  );
+
   static List<AqiStation> mockStations() => const [
     AqiStation(name: 'Paris Centre',        lat: 48.856, lng: 2.352,  aqi: 42,  pm25: 8,  pm10: 19, no2: 38, o3: 61, source: 'AirParif', windKmh: 12.0),
     AqiStation(name: 'Périphérique Est',    lat: 48.848, lng: 2.413,  aqi: 78,  pm25: 22, pm10: 41, no2: 68, o3: 52, source: 'AirParif', windKmh: 18.0),

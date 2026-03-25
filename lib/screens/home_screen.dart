@@ -17,6 +17,8 @@ import '../l10n/app_localizations.dart';
 import '../navigation/app_shell.dart' show AppShellState;
 import '../screens/details_screen.dart';
 import '../screens/alerts_screen.dart';
+import '../features/exposure/presentation/providers/exposure_provider.dart';
+import '../features/exposure/presentation/screens/exposure_dashboard_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -302,6 +304,11 @@ class HomeScreen extends StatelessWidget {
                   shareLabel: l.shareBtn,
                   onShare: () => _showShareSheet(context, d, ap.profile, l),
                 ),
+              ),
+
+              // ── Air Footprint Preview ──────────────────────────────────
+              SliverToBoxAdapter(
+                child: _AirFootprintPreview(l: l),
               ),
 
               // ── Recommendation ─────────────────────────────────────────
@@ -1280,3 +1287,71 @@ class _HomeShimmer extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Air Footprint Preview Card
+// ─────────────────────────────────────────────────────────────────────────────
+class _AirFootprintPreview extends StatelessWidget {
+  final AppLocalizations l;
+  const _AirFootprintPreview({required this.l});
+
+  @override
+  Widget build(BuildContext context) {
+    final ep = context.watch<ExposureProvider>();
+    final score = ep.todayScore;
+    
+    if (score == null) return const SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: () => Navigator.push(context, 
+        MaterialPageRoute(builder: (_) => const ExposureDashboardScreen())),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _gradeColor(score.grade).withValues(alpha: 0.15),
+              ),
+              child: Center(
+                child: Text(score.grade, 
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, 
+                    color: _gradeColor(score.grade), fontFamily: 'DMMono')),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.airFootprintTitle, 
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.ink)),
+                  Text(l.airFootprintCigarettes(score.cigaretteEquivalent.toStringAsFixed(1)),
+                    style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.ink3),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _gradeColor(String grade) {
+    if (grade.startsWith('A')) return AppColors.aqiGreen;
+    if (grade == 'B') return AppColors.aqiYellow;
+    if (grade == 'C') return AppColors.aqiOrange;
+    if (grade == 'D') return AppColors.aqiRed;
+    return AppColors.aqiPurple;
+  }
+}
+

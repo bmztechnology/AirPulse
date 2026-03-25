@@ -98,6 +98,35 @@
   "settingsMedical": "Medical conditions",
   "settingsMedicalDesc": "Manages recommendations",
   "settingsPersonalThreshold": "Personal AQI threshold",
+  "airFootprintTitle": "Air Footprint",
+  "airFootprintHealthScore": "HEALTH SCORE",
+  "airFootprintNoData": "No exposure data recorded yet.",
+  "airFootprintCigarettes": "{count} cigarettes",
+  "@airFootprintCigarettes": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "airFootprintCigaretteDesc": "Equivalent microparticles inhaled",
+  "airFootprintOutdoorTime": "{hours}h spent outdoors",
+  "@airFootprintOutdoorTime": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "airFootprintAvgAqiSubi": "Avg. AQI experienced: {aqi}",
+  "@airFootprintAvgAqiSubi": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      }
+    }
+  },
+  "airFootprintLast7Days": "LAST 7 DAYS",
   "settingsPersonalThresholdDesc": "Beyond this, critical alerts",
   "settingsDataSources": "Data sources",
   "settingsDisplay": "Display",
