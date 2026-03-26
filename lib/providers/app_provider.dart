@@ -150,6 +150,7 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> refreshLocation({bool forceFresh = false}) async {
+    debugPrint('AirPulse: refreshLocation triggered (forceFresh: $forceFresh)');
     if (_loading) return;
     _loading = true;
     _error = null;

@@ -169,12 +169,14 @@ class HomeScreen extends StatelessWidget {
                   child: Row(
                     children: [
                       Image.asset('assets/images/logo.png', width: 32, height: 32, fit: BoxFit.contain),
-                      const SizedBox(width: 8),
-                      Text(l.appTitle,
-                          style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.ink)),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(l.appTitle,
+                            style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.ink)),
+                      ),
                       const Spacer(),
                       // FIX-BUG-1: _IconBtn is now defined at bottom of this file.
                       _IconBtn(

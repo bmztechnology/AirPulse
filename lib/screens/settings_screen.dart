@@ -37,19 +37,20 @@ class SettingsScreen extends StatelessWidget {
         .label;
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
             SliverAppBar(
-              backgroundColor: AppColors.cream,
+              backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
               surfaceTintColor: Colors.transparent,
               pinned: true,
               title: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset('assets/images/logo.png', width: 24, height: 24),
+                  Image.asset('assets/images/logo.png', width: 24, height: 24, fit: BoxFit.contain),
                   const SizedBox(width: 8),
-                  Text(l.settingsTitle),
+                  Flexible(child: Text(l.settingsTitle, overflow: TextOverflow.ellipsis)),
                 ],
               ),
               centerTitle: false,

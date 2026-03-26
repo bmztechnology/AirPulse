@@ -24,14 +24,15 @@ class DetailsScreen extends StatelessWidget {
           slivers: [
             // Header
             SliverAppBar(
-              backgroundColor: AppColors.cream,
+              backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
               surfaceTintColor: Colors.transparent,
               pinned: true,
               title: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset('assets/images/logo.png', width: 24, height: 24),
+                  Image.asset('assets/images/logo.png', width: 24, height: 24, fit: BoxFit.contain),
                   const SizedBox(width: 8),
-                  Text(l.pollutantsTitle),
+                  Flexible(child: Text(l.pollutantsTitle, overflow: TextOverflow.ellipsis)),
                 ],
               ),
               centerTitle: false,
