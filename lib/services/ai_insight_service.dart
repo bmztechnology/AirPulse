@@ -76,7 +76,7 @@ class AiInsightService {
       _    => 'Answer in English.',
     };
 
-    return '''You are a precision air quality health advisor. Give a SHORT, ACTIONABLE analysis.
+    return '''You are a precision air quality health advisor. Give a short, actionable analysis.
 
 Profile: $profileDesc
 Time: ${hour}h, Location: ${d.stationName}
@@ -90,7 +90,59 @@ Rules:
 - MAX 3 sentences. No markdown. No lists. No title.
 - Be SPECIFIC: mention exact values, best/worst hours.
 - Give ONE concrete recommendation based on the profile.
-- $langInstruct''';
+- $langInstruct
+- No disclaimers, no "as an AI", no warnings unrelated to air quality.
+- Keep tone practical and concise.''';
+  }
+
+  static String _sanitizeInsight(String content) {
+    var out = content.trim();
+    if (out.isEmpty) return out;
+    out = out.replaceAll(RegExp(r'[*`#]'), '');
+    out = out.replaceAll(RegExp(r'\n+'), ' ').replaceAll(RegExp(r'\s{2,}'), ' ');
+    return out.trim();
+  }
+
+  static bool _isWeakInsight(String text) {
+    final lower = text.toLowerCase();
+    if (text.length < 35) return true;
+    if (lower.contains('as an ai') || lower.contains('i cannot') || lower.contains('i can\'t')) {
+      return true;
+    }
+    if (lower.contains('consult your doctor') && text.length < 70) return true;
+    return false;
+  }
+
+  static String _fallbackInsight({
+    required AirQualityData data,
+    required UserProfile profile,
+    required String lang,
+  }) {
+    final aqi = data.aqi;
+    final pm25 = data.pm25.toStringAsFixed(1);
+    final station = data.stationName;
+    final level = aqi <= 50 ? 'good' : aqi <= 100 ? 'moderate' : aqi <= 150 ? 'unhealthy' : 'high';
+    final profileLabel = profile.name;
+    return switch (lang) {
+      'fr' =>
+        'AQI $aqi a $station (PM2.5 $pm25). Niveau ${level == 'good' ? 'bon' : level == 'moderate' ? 'modere' : 'eleve'} pour le profil $profileLabel. Privilegiez les heures les moins chargees et reduisez l’effort si la gene apparait.',
+      'es' =>
+        'AQI $aqi en $station (PM2.5 $pm25). Nivel ${level == 'good' ? 'bueno' : level == 'moderate' ? 'moderado' : 'alto'} para el perfil $profileLabel. Prioriza horarios con menos contaminacion y reduce el esfuerzo si notas molestia.',
+      'de' =>
+        'AQI $aqi in $station (PM2.5 $pm25). Niveau ${level == 'good' ? 'gut' : level == 'moderate' ? 'moderat' : 'hoch'} fur Profil $profileLabel. Bevorzuge verkehrsarme Zeiten und reduziere die Intensitat bei Beschwerden.',
+      'it' =>
+        'AQI $aqi a $station (PM2.5 $pm25). Livello ${level == 'good' ? 'buono' : level == 'moderate' ? 'moderato' : 'alto'} per il profilo $profileLabel. Preferisci le fasce meno trafficate e riduci l’intensita se senti fastidio.',
+      'pt' =>
+        'AQI $aqi em $station (PM2.5 $pm25). Nivel ${level == 'good' ? 'bom' : level == 'moderate' ? 'moderado' : 'alto'} para o perfil $profileLabel. Prefira horarios menos poluidos e reduza o esforco se houver desconforto.',
+      'ar' =>
+        'مؤشر AQI يساوي $aqi في $station (PM2.5 = $pm25). المستوى ${level == 'good' ? 'جيد' : level == 'moderate' ? 'متوسط' : 'مرتفع'} لملف $profileLabel. اختر اوقات اقل ازدحاما وخفف الجهد عند ظهور اعراض.',
+      'zh' =>
+        '$station 当前AQI为 $aqi（PM2.5 $pm25）。对 $profileLabel 档案来说空气质量${level == 'good' ? '较好' : level == 'moderate' ? '中等' : '偏高'}。建议避开高峰时段，若不适请降低运动强度。',
+      'ja' =>
+        '$station の現在AQIは $aqi（PM2.5 $pm25）です。$profileLabel プロファイルでは${level == 'good' ? '良好' : level == 'moderate' ? '中程度' : '高め'}です。混雑時間を避け、違和感があれば運動強度を下げてください。',
+      _ =>
+        'AQI is $aqi at $station (PM2.5 $pm25). Air quality is ${level == 'good' ? 'good' : level == 'moderate' ? 'moderate' : 'elevated'} for profile $profileLabel. Prefer lower-traffic hours and reduce intensity if symptoms appear.',
+    };
   }
 
   // ── Appel Groq API ────────────────────────────────────────────────────────
@@ -117,10 +169,14 @@ Rules:
         body: jsonEncode({
           'model': _model,
           'messages': [
+            {
+              'role': 'system',
+              'content': 'You provide concise health-focused air-quality guidance with concrete actions.'
+            },
             {'role': 'user', 'content': prompt}
           ],
           'max_tokens': 180,
-          'temperature': 0.4,
+          'temperature': 0.2,
           'stream': false,
         }),
       ).timeout(const Duration(seconds: 12));
@@ -129,7 +185,10 @@ Rules:
         final json = jsonDecode(resp.body) as Map<String, dynamic>;
         final content = json['choices']?[0]?['message']?['content'] as String?;
         if (content != null && content.isNotEmpty) {
-          _cachedInsight = content.trim();
+          final cleaned = _sanitizeInsight(content);
+          _cachedInsight = _isWeakInsight(cleaned)
+              ? _fallbackInsight(data: data, profile: profile, lang: lang)
+              : cleaned;
           _cachedContext = fp;
           return _cachedInsight;
         }
@@ -139,7 +198,7 @@ Rules:
     } catch (e) {
       debugPrint('AirPulse AI: $e');
     }
-    return null;
+    return _fallbackInsight(data: data, profile: profile, lang: lang);
   }
 
   // ── Conseil court pour popup carte ────────────────────────────────────────

@@ -476,8 +476,8 @@ class _AqiHistory extends StatelessWidget {
           final aqis = entry.value.value;
           final avg = aqis.reduce((a, b) => a + b) ~/ aqis.length;
           final dt  = DateTime.parse(day);
-          final label = i == 0 ? "Aujourd'hui"
-              : i == 1 ? 'Hier'
+          final label = i == 0 ? l.timeToday
+              : i == 1 ? l.timeYesterday
               : '${dt.day}/${dt.month}';
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -500,11 +500,11 @@ class _AqiHistory extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Text('AQI $avg',
+              Text(l.aqiValue(avg),
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
                     color: aqiColor(avg), fontFamily: 'DMMono')),
               const SizedBox(width: 6),
-              Text('(${aqis.length} mesures)',
+              Text(l.measurementsCount(aqis.length),
                 style: const TextStyle(fontSize: 10, color: AppColors.ink3)),
             ]),
           );

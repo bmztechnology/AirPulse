@@ -25,19 +25,31 @@ class HomeScreen extends StatelessWidget {
 
   // L-08 fix: afficher un snackbar quand AppProvider._error est non-null
   void _listenForErrors(BuildContext context, AppProvider ap, AppLocalizations l) {
-    if (ap.error == null) return;
+    if (ap.error == null && ap.refreshErrorType == null) return;
+    final message = switch (ap.refreshErrorType) {
+      RefreshErrorType.gpsDisabled => l.gpsDisabledMessage,
+      RefreshErrorType.offlineWithCache => l.errorOfflineCached,
+      RefreshErrorType.offlineNoData => l.errorOfflineNoData,
+      null => ap.error ?? l.errorGenericRefresh,
+    };
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(ap.error!),
+        content: Text(message),
         backgroundColor: AppColors.aqiRed,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
-          label: l.retryBtn,
+          label: ap.gpsDisabled ? l.enableGpsBtn : l.retryBtn,
           textColor: Colors.white,
-          onPressed: () => ap.refreshLocation(),
+          onPressed: () async {
+            if (ap.gpsDisabled) {
+              await ap.openLocationSettings();
+            } else {
+              await ap.refreshLocation();
+            }
+          },
         ),
       ));
       ap.clearError();

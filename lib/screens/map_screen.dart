@@ -19,10 +19,13 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapCtrl = MapController();
+  final Distance _distance = const Distance();
   String  _layer          = 'aqi';
   bool    _centeredOnGps  = false;
   int     _forecastHour   = 0;   // 0 = maintenant, 2/4/6/12 = dans X heures
   bool    _showAvoidZones = true;
+  AqiStation? _selectedStation;
+  int? _selectedAqi;
 
   final _layers = ['aqi', 'pm25', 'pm10', 'no2', 'o3', 'wind'];
 
@@ -98,12 +101,53 @@ class _MapScreenState extends State<MapScreen> {
     _mapCtrl.move(LatLng(ap.lastLat ?? 48.856, ap.lastLng ?? 2.352), 13);
   }
 
+  void _zoomBy(double delta) {
+    final cam = _mapCtrl.camera;
+    final next = (cam.zoom + delta).clamp(5.0, 18.0);
+    _mapCtrl.move(cam.center, next);
+  }
+
+  double _distanceKm(double lat1, double lng1, double lat2, double lng2) {
+    return _distance.as(
+      LengthUnit.Kilometer,
+      LatLng(lat1, lng1),
+      LatLng(lat2, lng2),
+    );
+  }
+
+  AqiStation? _nearestStation(LatLng tap, List<AqiStation> stations) {
+    if (stations.isEmpty) return null;
+    AqiStation? nearest;
+    var nearestDist = 1e9;
+    for (final s in stations) {
+      final d = _distanceKm(tap.latitude, tap.longitude, s.lat, s.lng);
+      if (d < nearestDist) {
+        nearestDist = d;
+        nearest = s;
+      }
+    }
+    return nearestDist <= 4.0 ? nearest : null;
+  }
+
+  void _selectStation(AqiStation s, int aqi) {
+    setState(() {
+      _selectedStation = s;
+      _selectedAqi = aqi;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final ap       = context.watch<AppProvider>();
     final l        = AppLocalizations.of(context);
     final stations = ap.stations;
     final hasGps   = ap.lastLat != null && ap.lastLng != null;
+    final ranked = [...stations]..sort((a, b) => _forecastAqi(a, ap).compareTo(_forecastAqi(b, ap)));
+    final best = ranked.isNotEmpty ? ranked.first : null;
+    final worst = ranked.isNotEmpty ? ranked.last : null;
+    final avgAqi = ranked.isEmpty
+        ? ap.data.aqi
+        : ranked.map((s) => _forecastAqi(s, ap)).reduce((a, b) => a + b) ~/ ranked.length;
 
     return Scaffold(
       backgroundColor: AppColors.cream,
@@ -136,7 +180,7 @@ class _MapScreenState extends State<MapScreen> {
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Text('🚫', style: TextStyle(fontSize: 12)),
                         const SizedBox(width: 4),
-                        Text('Zones',
+                        Text(l.mapZonesLabel,
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
                             color: _showAvoidZones ? AppColors.aqiRed : AppColors.ink3)),
                       ]),
@@ -168,6 +212,50 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               )
             else ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _MiniInsightChip(
+                        icon: '✅',
+                        label: l.mapBestZone,
+                        value: best != null ? l.aqiValue(_forecastAqi(best, ap)) : '--',
+                        onTap: best == null
+                            ? null
+                            : () {
+                                final aqi = _forecastAqi(best, ap);
+                                _mapCtrl.move(LatLng(best.lat, best.lng), 15);
+                                _selectStation(best, aqi);
+                              },
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: _MiniInsightChip(
+                        icon: '⚠️',
+                        label: l.mapWorstZone,
+                        value: worst != null ? l.aqiValue(_forecastAqi(worst, ap)) : '--',
+                        onTap: worst == null
+                            ? null
+                            : () {
+                                final aqi = _forecastAqi(worst, ap);
+                                _mapCtrl.move(LatLng(worst.lat, worst.lng), 15);
+                                _selectStation(worst, aqi);
+                              },
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: _MiniInsightChip(
+                        icon: '📊',
+                        label: l.mapAvgLabel,
+                        value: l.aqiValue(avgAqi),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               // ── Layer selector ─────────────────────────────────────────
               SizedBox(
               height: 44,
@@ -208,6 +296,12 @@ class _MapScreenState extends State<MapScreen> {
                       initialZoom: 13,
                       maxZoom: 18,
                       minZoom: 5,
+                      onTap: (_, point) {
+                        final near = _nearestStation(point, stations);
+                        if (near == null) return;
+                        final aqi = _forecastAqi(near, ap);
+                        _selectStation(near, aqi);
+                      },
                     ),
                     children: [
                       // Fond OSM
@@ -259,7 +353,10 @@ class _MapScreenState extends State<MapScreen> {
                             point: LatLng(s.lat, s.lng),
                             width: 56, height: 56,
                             child: GestureDetector(
-                              onTap: () => _showStationPopup(context, s, aqi, l),
+                              onTap: () {
+                                _selectStation(s, aqi);
+                                _showStationPopup(context, s, aqi, l);
+                              },
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: color, shape: BoxShape.circle,
@@ -336,14 +433,31 @@ class _MapScreenState extends State<MapScreen> {
                           color: AppColors.accent,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text('+$_forecastHour h',
+                        child: Text('+${_forecastHour}h',
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
                               color: Colors.white)),
                       ),
                     ),
+                  Positioned(
+                    right: 10,
+                    bottom: 10,
+                    child: Column(
+                      children: [
+                        _MapControlBtn(icon: '+', onTap: () => _zoomBy(1)),
+                        const SizedBox(height: 6),
+                        _MapControlBtn(icon: '-', onTap: () => _zoomBy(-1)),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
+            if (_selectedStation != null && _selectedAqi != null)
+              _SelectedStationCard(
+                station: _selectedStation!,
+                aqi: _selectedAqi!,
+                onOpen: () => _showStationPopup(context, _selectedStation!, _selectedAqi!, l),
+              ),
 
             // ── Légende gradient ───────────────────────────────────────
             Container(
@@ -406,7 +520,7 @@ class _MapScreenState extends State<MapScreen> {
                           color: AppColors.ink3, letterSpacing: 0.8)),
                       const Spacer(),
                       if (hasGps)
-                        Text('AQI actuel : ${ap.data.aqi}',
+                        Text(l.mapCurrentAqi(ap.data.aqi),
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
                             color: aqiColor(ap.data.aqi))),
                     ]),
@@ -419,9 +533,17 @@ class _MapScreenState extends State<MapScreen> {
                         .take(6)
                         .map((s) => _StationRow(
                           station: s,
+                          l: l,
+                          distanceKm: hasGps
+                              ? _distanceKm(ap.lastLat!, ap.lastLng!, s.lat, s.lng)
+                              : null,
                           displayAqi: _forecastAqi(s, ap),
                           exceedThreshold: _forecastAqi(s, ap) > ap.personalThreshold,
-                          onTap: () => _mapCtrl.move(LatLng(s.lat, s.lng), 15)))
+                          onTap: () {
+                            final aqi = _forecastAqi(s, ap);
+                            _mapCtrl.move(LatLng(s.lat, s.lng), 15);
+                            _selectStation(s, aqi);
+                          }))
                         .toList(),
                     ),
                   ),
@@ -659,11 +781,15 @@ class _MapScreenState extends State<MapScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _StationRow extends StatelessWidget {
   final AqiStation station;
+  final AppLocalizations l;
+  final double? distanceKm;
   final int        displayAqi;
   final bool       exceedThreshold;
   final VoidCallback onTap;
   const _StationRow({
     required this.station,
+    required this.l,
+    required this.distanceKm,
     required this.displayAqi,
     required this.exceedThreshold,
     required this.onTap,
@@ -698,12 +824,129 @@ class _StationRow extends StatelessWidget {
                   const Text(' 🚫',
                     style: TextStyle(fontSize: 11)),
               ]),
-              Text('${station.source} · PM2.5: ${station.pm25.toStringAsFixed(0)} μg',
+              Text(l.mapStationPm25(station.source, station.pm25.toStringAsFixed(0)),
                 style: const TextStyle(fontSize: 10, color: AppColors.ink3)),
+              if (distanceKm != null)
+                Text(l.mapDistanceKm(distanceKm!.toStringAsFixed(1)),
+                  style: const TextStyle(fontSize: 10, color: AppColors.ink3)),
             ]),
           ),
           AqiBadge(aqi: displayAqi),
         ]),
+      ),
+    );
+  }
+}
+
+class _MiniInsightChip extends StatelessWidget {
+  final String icon;
+  final String label;
+  final String value;
+  final VoidCallback? onTap;
+  const _MiniInsightChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final child = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.cream2,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 14)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 10, color: AppColors.ink3)),
+                Text(value, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.ink)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (onTap == null) return child;
+    return GestureDetector(onTap: onTap, child: child);
+  }
+}
+
+class _MapControlBtn extends StatelessWidget {
+  final String icon;
+  final VoidCallback onTap;
+  const _MapControlBtn({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Center(
+          child: Text(icon, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.ink)),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectedStationCard extends StatelessWidget {
+  final AqiStation station;
+  final int aqi;
+  final VoidCallback onOpen;
+  const _SelectedStationCard({
+    required this.station,
+    required this.aqi,
+    required this.onOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onOpen,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.cream2,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            const Text('📍', style: TextStyle(fontSize: 16)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                station.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.ink),
+              ),
+            ),
+            const SizedBox(width: 8),
+            AqiBadge(aqi: aqi, fontSize: 12),
+            const SizedBox(width: 8),
+            const Text('›', style: TextStyle(fontSize: 14, color: AppColors.ink3)),
+          ],
+        ),
       ),
     );
   }

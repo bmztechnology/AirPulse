@@ -64,7 +64,7 @@ class _AiScreenState extends State<AiScreen> {
                     icon: const Text('↺', style: TextStyle(fontSize: 18,
                         color: AppColors.ink2)),
                     onPressed: ap.aiLoading ? null : ap.refreshLocation,
-                    tooltip: 'Rafraîchir',
+                    tooltip: l.locationRefresh,
                   ),
               ],
             ),
@@ -403,7 +403,7 @@ class _AiScreenState extends State<AiScreen> {
       const SizedBox(height: 4),
       Row(children: [
         const Text('🤖 ', style: TextStyle(fontSize: 12)),
-        Text('Analyse en cours…',
+        Text(AppLocalizations.of(context).aiInsightLoading,
           style: const TextStyle(fontSize: 11, color: AppColors.ink3,
               fontStyle: FontStyle.italic)),
       ]),
@@ -413,9 +413,9 @@ class _AiScreenState extends State<AiScreen> {
   void _launchGroqConsole() {
     Clipboard.setData(const ClipboardData(text: 'https://console.groq.com'));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('🔗 console.groq.com copié'),
+      SnackBar(content: Text(AppLocalizations.of(context).groqLinkCopied),
         behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 3)),
+        duration: const Duration(seconds: 3)),
     );
   }
 }

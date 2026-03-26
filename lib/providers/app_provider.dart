@@ -4,12 +4,19 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/air_quality_model.dart';
 import '../services/ai_insight_service.dart';
 import '../core/di/injection.dart';
 import '../core/services/data_refresh_service.dart';
+
+enum RefreshErrorType {
+  gpsDisabled,
+  offlineWithCache,
+  offlineNoData,
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AppProvider
@@ -33,6 +40,10 @@ class AppProvider extends ChangeNotifier {
   String? _error;
   DateTime? _lastRefreshTime;
   String? get error => _error;
+  RefreshErrorType? _refreshErrorType;
+  RefreshErrorType? get refreshErrorType => _refreshErrorType;
+  bool _gpsDisabled = false;
+  bool get gpsDisabled => _gpsDisabled;
 
   String _locationName = '…';
   String get locationName => _locationName;
@@ -129,8 +140,19 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> refreshLocation() async {
     if (_loading) return;
-    _loading = true; _error = null; notifyListeners();
+    _loading = true;
+    _error = null;
+    _refreshErrorType = null;
+    notifyListeners();
     try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _gpsDisabled = true;
+        _refreshErrorType = RefreshErrorType.gpsDisabled;
+        return;
+      }
+
+      _gpsDisabled = false;
       final res = await sl<DataRefreshService>().performRefresh(
         profile: _profile,
         lastRefreshTime: _lastRefreshTime,
@@ -143,8 +165,11 @@ class AppProvider extends ChangeNotifier {
       } else {
         final cached = await _loadFromCache();
         await _syncHistoryWithPrefs();
-        if (cached) _error = 'Mode hors ligne (données en cache)';
-        else _error = 'Impossible de récupérer les données (offline).';
+        if (cached) {
+          _refreshErrorType = RefreshErrorType.offlineWithCache;
+        } else {
+          _refreshErrorType = RefreshErrorType.offlineNoData;
+        }
       }
     } catch (e) {
       debugPrint('AirPulse: refresh: $e');
@@ -153,6 +178,14 @@ class AppProvider extends ChangeNotifier {
     } finally {
       _initialized = true; _loading = false; notifyListeners();
       if (_lastLat != null) unawaited(_refreshAiInsight());
+    }
+  }
+
+  Future<void> openLocationSettings() async {
+    try {
+      await Geolocator.openLocationSettings();
+    } catch (e) {
+      debugPrint('AirPulse: openLocationSettings: $e');
     }
   }
 
@@ -259,5 +292,9 @@ class AppProvider extends ChangeNotifier {
     if (AiInsightService.hasKey && _initialized) unawaited(_refreshAiInsight());
   }
 
-  void clearError() { _error = null; notifyListeners(); }
+  void clearError() {
+    _error = null;
+    _refreshErrorType = null;
+    notifyListeners();
+  }
 }

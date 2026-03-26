@@ -209,6 +209,7 @@
   "timeHoursAgo": "{n}h ago",
   "timeDaysAgo": "{n}d ago",
   "timeYesterday": "Yesterday",
+  "timeToday": "Today",
   "timeMinutesAgo": "{n}min ago",
   "@timeHoursAgo": {
     "description": "Hours ago",
@@ -290,6 +291,59 @@
   "pollenVeryHigh": "Very high",
   "pollenLoading": "Pollen data loading…",
   "retryBtn": "Retry",
+  "enableGpsBtn": "Enable GPS",
+  "gpsDisabledMessage": "GPS is disabled. Please enable location services to continue.",
+  "errorOfflineCached": "Offline mode (cached data).",
+  "errorOfflineNoData": "Unable to retrieve data while offline.",
+  "errorGenericRefresh": "Unable to refresh data right now.",
+  "groqLinkCopied": "🔗 console.groq.com copied",
+  "aqiValue": "AQI {value}",
+  "@aqiValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "measurementsCount": "({count} measurements)",
+  "@measurementsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mapZonesLabel": "Zones",
+  "mapCurrentAqi": "Current AQI: {aqi}",
+  "@mapCurrentAqi": {
+    "placeholders": {
+      "aqi": {
+        "type": "int"
+      }
+    }
+  },
+  "mapStationPm25": "{source} · PM2.5: {pm25} μg",
+  "@mapStationPm25": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      },
+      "pm25": {
+        "type": "String"
+      }
+    }
+  },
+  "mapBestZone": "Best",
+  "mapWorstZone": "Worst",
+  "mapAvgLabel": "Average",
+  "mapDistanceKm": "{km} km away",
+  "@mapDistanceKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
   "mapAdviceGood": "✅ Excellent air — activities unrestricted",
   "mapAdviceModerate": "⚠️ Moderate air — sensitive groups take care",
   "mapAdviceUnhealthy": "🚴 Reduce prolonged outdoor effort",
