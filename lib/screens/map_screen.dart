@@ -98,7 +98,7 @@ class _MapScreenState extends State<MapScreen> {
 
   void _centerMap(AppProvider ap) {
     _centeredOnGps = true;
-    _mapCtrl.move(LatLng(ap.lastLat ?? 0.0, ap.lastLng ?? 0.0), ap.lastLat == null ? 2 : 13);
+    _mapCtrl.move(LatLng(ap.lastLat ?? 48.8566, ap.lastLng ?? 2.3522), ap.lastLat == null ? 11 : 13);
   }
 
   void _zoomBy(double delta) {
@@ -160,6 +160,8 @@ class _MapScreenState extends State<MapScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 children: [
+                  Image.asset('assets/images/logo.png', width: 28, height: 28),
+                  const SizedBox(width: 8),
                   Text(l.mapTitle,
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700,
                         color: AppColors.ink)),
@@ -292,8 +294,8 @@ class _MapScreenState extends State<MapScreen> {
                   FlutterMap(
                     mapController: _mapCtrl,
                     options: MapOptions(
-                      initialCenter: LatLng(ap.lastLat ?? 0.0, ap.lastLng ?? 0.0),
-                      initialZoom: ap.lastLat == null ? 2 : 13,
+                      initialCenter: LatLng(ap.lastLat ?? 48.8566, ap.lastLng ?? 2.3522),
+                      initialZoom: ap.lastLat == null ? 11 : 13,
                       maxZoom: 18,
                       minZoom: 5,
                       onTap: (_, point) {
@@ -449,6 +451,45 @@ class _MapScreenState extends State<MapScreen> {
                       ],
                     ),
                   ),
+
+                  // ── Permission Overlay ─────────────────────────────────────
+                  if (ap.lastLat == null && (ap.refreshErrorType == RefreshErrorType.locationPermissionDenied || 
+                                 ap.refreshErrorType == RefreshErrorType.locationPermissionDeniedForever))
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withOpacity(0.5),
+                        child: Center(
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 40),
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: AppColors.cream,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('📍', style: TextStyle(fontSize: 40)),
+                                const SizedBox(height: 16),
+                                Text(l.locationPermissionDeniedMessage,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.ink)),
+                                const SizedBox(height: 20),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.accent,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  onPressed: () => ap.openAppSettings(),
+                                  child: Text(l.btnSettings),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

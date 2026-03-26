@@ -56,6 +56,14 @@ class AppProvider extends ChangeNotifier {
   double? get lastLat => _lastLat;
   double? get lastLng => _lastLng;
 
+  bool _waitingForSettings = false;
+  bool get waitingForSettings => _waitingForSettings;
+
+  void setWaitingForSettings(bool value) {
+    _waitingForSettings = value;
+    notifyListeners();
+  }
+
   String? _aiInsight;
   bool    _aiLoading = false;
   String? get aiInsight  => _aiInsight;
@@ -141,7 +149,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> refreshLocation() async {
+  Future<void> refreshLocation({bool forceFresh = false}) async {
     if (_loading) return;
     _loading = true;
     _error = null;
@@ -159,6 +167,7 @@ class AppProvider extends ChangeNotifier {
       final res = await sl<DataRefreshService>().performRefresh(
         profile: _profile,
         lastRefreshTime: _data.updatedAt,
+        forceFresh: forceFresh,
       );
       
       if (res != null) {
@@ -209,6 +218,8 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> openLocationSettings() async {
     try {
+      _waitingForSettings = true;
+      notifyListeners();
       await Geolocator.openLocationSettings();
     } catch (e) {
       debugPrint('AirPulse: openLocationSettings: $e');
@@ -216,6 +227,8 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> openAppSettings() async {
+    _waitingForSettings = true;
+    notifyListeners();
     await Geolocator.openAppSettings();
   }
 

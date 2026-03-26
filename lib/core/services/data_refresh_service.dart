@@ -37,10 +37,11 @@ class DataRefreshService {
   Future<AirQualityData?> performRefresh({
     required UserProfile profile,
     DateTime? lastRefreshTime,
+    bool forceFresh = false,
   }) async {
     try {
       // 1. Get GPS
-      final pos = await _getPosition();
+      final pos = await _getPosition(forceFresh: forceFresh);
       if (pos == null) return null; // Should not happen with current _getPosition
 
       final lat = pos.latitude;
@@ -174,7 +175,7 @@ class DataRefreshService {
 
   // ── Private helpers (extracted from AppProvider) ──────────────────────────
 
-  Future<Position?> _getPosition() async {
+  Future<Position?> _getPosition({bool forceFresh = false}) async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
         throw LocationException(LocationError.serviceDisabled);
@@ -190,10 +191,21 @@ class DataRefreshService {
         throw LocationException(LocationError.permissionDeniedForever);
       }
       
+      // 1. Try last known position first (fast) unless forceFresh is requested
+      if (!forceFresh) {
+        final lastKnown = await Geolocator.getLastKnownPosition();
+        if (lastKnown != null) {
+          // If less than 5 minutes old, use it for speed
+          final age = DateTime.now().difference(lastKnown.timestamp);
+          if (age.inMinutes < 5) return lastKnown;
+        }
+      }
+
+      // 2. Fallback to current position (precise)
       return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-        timeLimit: const Duration(seconds: 15),
-      ).timeout(const Duration(seconds: 16), onTimeout: () {
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 12),
+      ).timeout(const Duration(seconds: 13), onTimeout: () {
         throw LocationException(LocationError.timeout);
       });
     } on LocationException {

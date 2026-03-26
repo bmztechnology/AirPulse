@@ -22,53 +22,6 @@ import '../features/exposure/presentation/screens/exposure_dashboard_screen.dart
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  // L-08 fix: afficher un snackbar quand AppProvider._error est non-null
-  void _listenForErrors(BuildContext context, AppProvider ap, AppLocalizations l) {
-    if (ap.error == null && ap.refreshErrorType == null) return;
-    final message = switch (ap.refreshErrorType) {
-      RefreshErrorType.gpsDisabled => l.gpsDisabledMessage,
-      RefreshErrorType.locationPermissionDenied => l.locationPermissionDeniedMessage,
-      RefreshErrorType.locationPermissionDeniedForever => l.locationPermissionDeniedForeverMessage,
-      RefreshErrorType.locationTimeout => l.locationTimeoutMessage,
-      RefreshErrorType.offlineWithCache => l.errorOfflineCached,
-      RefreshErrorType.offlineNoData => l.errorOfflineNoData,
-      null => ap.error ?? l.errorGenericRefresh,
-    };
-
-    final actionLabel = switch (ap.refreshErrorType) {
-      RefreshErrorType.gpsDisabled => l.enableGpsBtn,
-      RefreshErrorType.locationPermissionDenied => l.btnRequest,
-      RefreshErrorType.locationPermissionDeniedForever => l.btnSettings,
-      _ => l.retryBtn,
-    };
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.aqiRed,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: actionLabel,
-          textColor: Colors.white,
-          onPressed: () async {
-            switch (ap.refreshErrorType) {
-              case RefreshErrorType.gpsDisabled:
-                await ap.openLocationSettings();
-              case RefreshErrorType.locationPermissionDeniedForever:
-              case RefreshErrorType.locationPermissionDenied:
-                await ap.openAppSettings();
-              default:
-                await ap.refreshLocation();
-            }
-          },
-        ),
-      ));
-      ap.clearError();
-    });
-  }
 
   String _profileEmoji(UserProfile p) => switch (p) {
         UserProfile.cyclist => '🚴',
@@ -197,7 +150,6 @@ class HomeScreen extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final d = ap.data;
 
-    _listenForErrors(context, ap, l);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -216,7 +168,7 @@ class HomeScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                   child: Row(
                     children: [
-                      Image.asset('assets/images/logo.png', width: 32, height: 32),
+                      Image.asset('assets/images/logo.png', width: 32, height: 32, fit: BoxFit.contain),
                       const SizedBox(width: 8),
                       Text(l.appTitle,
                           style: const TextStyle(
