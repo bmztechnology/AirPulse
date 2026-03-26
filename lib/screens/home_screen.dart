@@ -1,6 +1,5 @@
 // lib/screens/home_screen.dart
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -28,10 +27,21 @@ class HomeScreen extends StatelessWidget {
     if (ap.error == null && ap.refreshErrorType == null) return;
     final message = switch (ap.refreshErrorType) {
       RefreshErrorType.gpsDisabled => l.gpsDisabledMessage,
+      RefreshErrorType.locationPermissionDenied => l.locationPermissionDeniedMessage,
+      RefreshErrorType.locationPermissionDeniedForever => l.locationPermissionDeniedForeverMessage,
+      RefreshErrorType.locationTimeout => l.locationTimeoutMessage,
       RefreshErrorType.offlineWithCache => l.errorOfflineCached,
       RefreshErrorType.offlineNoData => l.errorOfflineNoData,
       null => ap.error ?? l.errorGenericRefresh,
     };
+
+    final actionLabel = switch (ap.refreshErrorType) {
+      RefreshErrorType.gpsDisabled => l.enableGpsBtn,
+      RefreshErrorType.locationPermissionDenied => l.btnRequest,
+      RefreshErrorType.locationPermissionDeniedForever => l.btnSettings,
+      _ => l.retryBtn,
+    };
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -41,13 +51,17 @@ class HomeScreen extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
-          label: ap.gpsDisabled ? l.enableGpsBtn : l.retryBtn,
+          label: actionLabel,
           textColor: Colors.white,
           onPressed: () async {
-            if (ap.gpsDisabled) {
-              await ap.openLocationSettings();
-            } else {
-              await ap.refreshLocation();
+            switch (ap.refreshErrorType) {
+              case RefreshErrorType.gpsDisabled:
+                await ap.openLocationSettings();
+              case RefreshErrorType.locationPermissionDeniedForever:
+              case RefreshErrorType.locationPermissionDenied:
+                await ap.openAppSettings();
+              default:
+                await ap.refreshLocation();
             }
           },
         ),
@@ -202,7 +216,7 @@ class HomeScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                   child: Row(
                     children: [
-                      const Text('💨', style: TextStyle(fontSize: 22)),
+                      Image.asset('assets/images/logo.png', width: 32, height: 32),
                       const SizedBox(width: 8),
                       Text(l.appTitle,
                           style: const TextStyle(
@@ -282,7 +296,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        const Text('📍', style: TextStyle(fontSize: 14)),
+                        const Text('📍', style: TextStyle(fontSize: 18)),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(ap.locationName,
@@ -1116,7 +1130,7 @@ class _ShareCard extends StatelessWidget {
           // Header : logo + lieu + heure
           Row(
             children: [
-              const Text('💨', style: TextStyle(fontSize: 22)),
+              Image.asset('assets/images/logo.png', width: 24, height: 24),
               const SizedBox(width: 6),
               const Text('AirPulse',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800,

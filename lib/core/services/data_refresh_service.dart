@@ -12,6 +12,21 @@ import '../../features/exposure/domain/repositories/exposure_repository.dart';
 import '../../services/ai_insight_service.dart';
 import 'notification_service.dart';
 
+enum LocationError {
+  serviceDisabled,
+  permissionDenied,
+  permissionDeniedForever,
+  timeout,
+  unknown
+}
+
+class LocationException implements Exception {
+  final LocationError error;
+  LocationException(this.error);
+  @override
+  String toString() => 'LocationException: $error';
+}
+
 class DataRefreshService {
   final ExposureRepository exposureRepository;
 
@@ -26,7 +41,7 @@ class DataRefreshService {
     try {
       // 1. Get GPS
       final pos = await _getPosition();
-      if (pos == null) return null;
+      if (pos == null) return null; // Should not happen with current _getPosition
 
       final lat = pos.latitude;
       final lng = pos.longitude;
@@ -63,6 +78,8 @@ class DataRefreshService {
       unawaited(_updateAqiHistory(aqiData));
 
       return aqiData;
+    } on LocationException {
+      rethrow;
     } catch (e) {
       debugPrint('AirPulse: DataRefreshService error: $e');
       return null;
@@ -159,15 +176,32 @@ class DataRefreshService {
 
   Future<Position?> _getPosition() async {
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) return null;
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw LocationException(LocationError.serviceDisabled);
+      }
       var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
-      if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) return null;
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+        if (perm == LocationPermission.denied) {
+          throw LocationException(LocationError.permissionDenied);
+        }
+      }
+      if (perm == LocationPermission.deniedForever) {
+        throw LocationException(LocationError.permissionDeniedForever);
+      }
+      
       return await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
         timeLimit: const Duration(seconds: 15),
-      );
-    } catch (_) { return null; }
+      ).timeout(const Duration(seconds: 16), onTimeout: () {
+        throw LocationException(LocationError.timeout);
+      });
+    } on LocationException {
+      rethrow;
+    } catch (e) {
+      debugPrint('AirPulse: _getPosition error: $e');
+      throw LocationException(LocationError.unknown);
+    }
   }
 
   Future<String> _fetchCityName(double lat, double lng) async {

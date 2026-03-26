@@ -16,6 +16,9 @@ enum RefreshErrorType {
   gpsDisabled,
   offlineWithCache,
   offlineNoData,
+  locationPermissionDenied,
+  locationPermissionDeniedForever,
+  locationTimeout
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -38,7 +41,7 @@ class AppProvider extends ChangeNotifier {
   bool get initialized => _initialized;
 
   String? _error;
-  DateTime? _lastRefreshTime;
+  // DateTime? _lastRefreshTime; // REMOVED UNUSED FIELD
   String? get error => _error;
   RefreshErrorType? _refreshErrorType;
   RefreshErrorType? get refreshErrorType => _refreshErrorType;
@@ -155,29 +158,52 @@ class AppProvider extends ChangeNotifier {
       _gpsDisabled = false;
       final res = await sl<DataRefreshService>().performRefresh(
         profile: _profile,
-        lastRefreshTime: _lastRefreshTime,
+        lastRefreshTime: _data.updatedAt,
       );
       
       if (res != null) {
-        _lastRefreshTime = DateTime.now();
-        await _loadFromCache();
+        _data = res;
+        _lastLat = res.lat;
+        _lastLng = res.lng;
+        _refreshErrorType = null;
+        _gpsDisabled = false;
         await _syncHistoryWithPrefs();
+        unawaited(_refreshAiInsight());
       } else {
-        final cached = await _loadFromCache();
+        final hasCache = await _loadFromCache();
         await _syncHistoryWithPrefs();
-        if (cached) {
+        if (hasCache) {
           _refreshErrorType = RefreshErrorType.offlineWithCache;
         } else {
           _refreshErrorType = RefreshErrorType.offlineNoData;
         }
       }
+    } on LocationException catch (e) {
+      _gpsDisabled = e.error == LocationError.serviceDisabled;
+      _refreshErrorType = switch (e.error) {
+        LocationError.serviceDisabled => RefreshErrorType.gpsDisabled,
+        LocationError.permissionDenied => RefreshErrorType.locationPermissionDenied,
+        LocationError.permissionDeniedForever => RefreshErrorType.locationPermissionDeniedForever,
+        LocationError.timeout => RefreshErrorType.locationTimeout,
+        _ => RefreshErrorType.offlineNoData,
+      };
+      final hasCache = await _loadFromCache();
+      if (hasCache) {
+        _refreshErrorType = RefreshErrorType.offlineWithCache;
+      }
+      await _syncHistoryWithPrefs();
     } catch (e) {
-      debugPrint('AirPulse: refresh: $e');
-      await _loadFromCache();
+      debugPrint('AirPulse: refreshLocation error: $e');
+      _refreshErrorType = RefreshErrorType.offlineNoData;
+      final hasCache = await _loadFromCache();
+      if (hasCache) {
+        _refreshErrorType = RefreshErrorType.offlineWithCache;
+      }
       await _syncHistoryWithPrefs();
     } finally {
-      _initialized = true; _loading = false; notifyListeners();
-      if (_lastLat != null) unawaited(_refreshAiInsight());
+      _initialized = true;
+      _loading = false;
+      notifyListeners();
     }
   }
 
@@ -187,6 +213,10 @@ class AppProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('AirPulse: openLocationSettings: $e');
     }
+  }
+
+  Future<void> openAppSettings() async {
+    await Geolocator.openAppSettings();
   }
 
   Future<void> _syncHistoryWithPrefs() async {

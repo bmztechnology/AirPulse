@@ -98,7 +98,7 @@ class _MapScreenState extends State<MapScreen> {
 
   void _centerMap(AppProvider ap) {
     _centeredOnGps = true;
-    _mapCtrl.move(LatLng(ap.lastLat ?? 48.856, ap.lastLng ?? 2.352), 13);
+    _mapCtrl.move(LatLng(ap.lastLat ?? 0.0, ap.lastLng ?? 0.0), ap.lastLat == null ? 2 : 13);
   }
 
   void _zoomBy(double delta) {
@@ -292,8 +292,8 @@ class _MapScreenState extends State<MapScreen> {
                   FlutterMap(
                     mapController: _mapCtrl,
                     options: MapOptions(
-                      initialCenter: LatLng(ap.lastLat ?? 48.856, ap.lastLng ?? 2.352),
-                      initialZoom: 13,
+                      initialCenter: LatLng(ap.lastLat ?? 0.0, ap.lastLng ?? 0.0),
+                      initialZoom: ap.lastLat == null ? 2 : 13,
                       maxZoom: 18,
                       minZoom: 5,
                       onTap: (_, point) {
@@ -626,7 +626,7 @@ class _MapScreenState extends State<MapScreen> {
 
   String _windIcon(double v) {
     if (v < 5)  return '🍃';
-    if (v < 20) return '💨';
+    if (v < 20) return '🌬️'; // Replacing 💨 with 🌬️ or similar if icon not available
     if (v < 40) return '🌬️';
     return '🌪️';
   }
