@@ -197,8 +197,9 @@ class AppProvider extends ChangeNotifier {
         LocationError.timeout => RefreshErrorType.locationTimeout,
         _ => RefreshErrorType.offlineNoData,
       };
+      // ONLY set offlineWithCache if we don't already have a specific location error
       final hasCache = await _loadFromCache();
-      if (hasCache) {
+      if (hasCache && _refreshErrorType == null) {
         _refreshErrorType = RefreshErrorType.offlineWithCache;
       }
       await _syncHistoryWithPrefs();

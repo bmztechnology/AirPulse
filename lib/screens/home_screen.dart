@@ -168,7 +168,10 @@ class HomeScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                   child: Row(
                     children: [
-                      Image.asset('assets/images/logo.png', width: 32, height: 32, fit: BoxFit.contain),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 40, maxHeight: 40),
+                        child: Image.asset('assets/images/logo.png', width: 32, height: 32, fit: BoxFit.contain),
+                      ),
                       const SizedBox(width: 10),
                       Flexible(
                         child: Text(l.appTitle,
