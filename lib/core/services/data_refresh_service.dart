@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/air_quality_model.dart';
@@ -25,15 +26,19 @@ class DataRefreshService {
     required UserProfile profile,
     DateTime? lastRefreshTime,
     bool forceFresh = false,
+    Map<String, String>? notificationLabels,
   }) async {
     try {
 
       // 2. Fetch parallel data
       final cityName = await _fetchCityName(lat, lng);
       final weather = await _fetchOpenMeteoWeather(lat, lng);
-      final aqiData = await _fetchOpenMeteoAqi(lat, lng, cityName, weather);
-      final stations = await _fetchNearbyStations(lat, lng, aqiData.aqi, cityName);
-
+      
+      // Fetch stations FIRST to prioritize real data over model
+      final stations = await _fetchNearbyStations(lat, lng, cityName);
+      
+      final aqiData = await _fetchOpenMeteoAqi(lat, lng, cityName, weather, stations);
+      
       // 3. Save to Hive Cache
       await _saveToCache(aqiData, lat, lng, cityName, stations);
 
@@ -54,7 +59,7 @@ class DataRefreshService {
       ));
 
       // 5. Check and Trigger Alerts
-      unawaited(_checkAndTriggerAlerts(aqiData, profile));
+      unawaited(_checkAndTriggerAlerts(aqiData, profile, notificationLabels));
 
       // 6. Update AQI History (for charts)
       unawaited(_updateAqiHistory(aqiData));
@@ -85,7 +90,7 @@ class DataRefreshService {
     }
   }
 
-  Future<void> _checkAndTriggerAlerts(AirQualityData data, UserProfile profile) async {
+  Future<void> _checkAndTriggerAlerts(AirQualityData data, UserProfile profile, Map<String, String>? labels) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final lang = prefs.getString('lang') ?? 'en';
@@ -109,8 +114,9 @@ class DataRefreshService {
         }
 
         // Trigger notification
-        var title = 'AirPulse Alert';
-        var body = 'AQI is ${data.aqi} at ${data.stationName}';
+        var title = labels?['title'] ?? 'AirPulse Alert';
+        var body = labels?['body']?.replaceAll('{aqi}', data.aqi.toString()).replaceAll('{station}', data.stationName) 
+                   ?? 'AQI is ${data.aqi} at ${data.stationName}';
 
         // Try AI content
         final aiContent = await AiInsightService.getNotifContent(
@@ -123,12 +129,14 @@ class DataRefreshService {
         if (aiContent != null) {
           title = aiContent.title;
           body = aiContent.body;
-        } else {
-          // Static fallback
+        } else if (labels != null) {
+          // Use localized labels from ARB
           if (type == 'aqi_100') {
-            title = lang == 'fr' ? '⚠️ Qualitive de l\'air mauvaise' : '⚠️ Poor Air Quality';
+            title = labels['titlePoor'] ?? title;
+            body = labels['bodyPoor']?.replaceAll('{aqi}', data.aqi.toString()).replaceAll('{station}', data.stationName) ?? body;
           } else if (type == 'threshold') {
-            title = lang == 'fr' ? '🛑 Seuil personnel dépassé' : '🛑 Personal threshold exceeded';
+            title = labels['titleThreshold'] ?? title;
+            body = labels['bodyThreshold']?.replaceAll('{aqi}', data.aqi.toString()).replaceAll('{threshold}', threshold.toInt().toString()).replaceAll('{station}', data.stationName) ?? body;
           }
         }
 
@@ -189,7 +197,7 @@ class DataRefreshService {
     return WeatherData(tempC: 0, humidity: 0, windKmh: 0, windDir: 'N', pressureHpa: 1013, uvIndex: 0, visibilityKm: 10);
   }
 
-  Future<AirQualityData> _fetchOpenMeteoAqi(double lat, double lng, String locationName, WeatherData weather) async {
+  Future<AirQualityData> _fetchOpenMeteoAqi(double lat, double lng, String locationName, WeatherData weather, List<AqiStation> stations) async {
     final uri = Uri.parse('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=$lat&longitude=$lng&current=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone&hourly=pm2_5&daily=grass_pollen,tree_pollen,mould_spores&timezone=auto');
     final resp = await http.get(uri).timeout(const Duration(seconds: 10));
     final json = jsonDecode(resp.body);
@@ -203,7 +211,26 @@ class DataRefreshService {
     final co = (cur['carbon_monoxide'] as num).toDouble() / 1000;
     final so2 = (cur['sulphur_dioxide'] as num).toDouble();
     
-    final aqi = _compositeAqi(pm25: pm25, no2: no2, o3: o3, co: co);
+    int aqi = _compositeAqi(pm25: pm25, no2: no2, o3: o3, co: co);
+
+    // ── Station Priority Logic ──────────────────────────────────────────────
+    // If a real station is within 5km, use its AQI instead of the model
+    if (stations.isNotEmpty) {
+      final dist = const Distance();
+      AqiStation? nearest;
+      double minDist = 999999;
+      for (final s in stations) {
+        final d = dist.as(LengthUnit.Kilometer, LatLng(lat, lng), LatLng(s.lat, s.lng));
+        if (d < minDist) {
+          minDist = d;
+          nearest = s;
+        }
+      }
+      if (nearest != null && minDist <= 5.0) {
+        debugPrint('AirPulse: Prioritizing station ${nearest.name} (dist: ${minDist.toStringAsFixed(1)}km)');
+        aqi = nearest.aqi;
+      }
+    }
 
     // Pollen
     final daily = json['daily'] as Map<String, dynamic>? ?? {};
@@ -243,16 +270,16 @@ class DataRefreshService {
     );
   }
 
-  Future<List<AqiStation>> _fetchNearbyStations(double lat, double lng, int baseAqi, String city) async {
+  Future<List<AqiStation>> _fetchNearbyStations(double lat, double lng, String city) async {
     try {
-      final l1 = lat - 0.5; final n1 = lng - 0.5;
-      final l2 = lat + 0.5; final n2 = lng + 0.5;
+      final l1 = lat - 0.8; final n1 = lng - 0.8; // Larger box
+      final l2 = lat + 0.8; final n2 = lng + 0.8;
       final uri = Uri.parse('${AppConfig.waqiEndpoint}?token=${AppConfig.waqiToken}&latlng=$l1,$n1,$l2,$n2');
       final resp = await http.get(uri).timeout(const Duration(seconds: 10));
       if (resp.statusCode == 200) {
         final json = jsonDecode(resp.body);
         if (json['status'] == 'ok') {
-          return (json['data'] as List).take(15).map((s) {
+          return (json['data'] as List).take(50).map((s) {
             final st = s as Map<String, dynamic>;
             final stAqi = int.tryParse(st['aqi'].toString()) ?? 0;
           return AqiStation(

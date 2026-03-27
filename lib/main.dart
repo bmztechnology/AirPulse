@@ -18,7 +18,8 @@ import 'core/services/notification_service.dart';
 import 'features/exposure/presentation/providers/exposure_provider.dart';
 import 'models/air_quality_model.dart';
 import 'core/services/data_refresh_service.dart';
-
+import 'core/i18n/localization_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 // ── Background Callback ──────────────────────────────────────────────────────
@@ -35,10 +36,16 @@ void callbackDispatcher() {
       final pos = await Geolocator.getLastKnownPosition() 
           ?? await Geolocator.getCurrentPosition(timeLimit: const Duration(seconds: 10));
       
+      final prefs = await SharedPreferences.getInstance();
+      final lang = prefs.getString('lang') ?? 'en';
+      final profileIdx = prefs.getInt('profile') ?? UserProfile.cyclist.index;
+      final profile = UserProfile.values[profileIdx];
+
       final res = await sl<DataRefreshService>().performRefresh(
         lat: pos.latitude,
         lng: pos.longitude,
-        profile: UserProfile.cyclist, 
+        profile: profile,
+        notificationLabels: LocalizationHelper.getNotificationLabels(lang),
       );
       
       return res != null;

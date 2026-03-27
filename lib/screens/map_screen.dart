@@ -160,7 +160,10 @@ class _MapScreenState extends State<MapScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 children: [
-                  Image.asset('assets/images/logo.png', width: 28, height: 28),
+                  Hero(
+                    tag: 'app_logo',
+                    child: Image.asset('assets/images/logo.png', width: 28, height: 28),
+                  ),
                   const SizedBox(width: 8),
                   Text(l.mapTitle,
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700,
@@ -344,7 +347,7 @@ class _MapScreenState extends State<MapScreen> {
                         }).toList(),
                       ),
 
-                      // ── Bulles AQI ─────────────────────────────────────
+                      // ── Bulles AQI (Glassmorphism Style) ─────────────────────────────
                       MarkerLayer(
                         markers: stations.map((s) {
                           final aqi   = _forecastAqi(s, ap);
@@ -353,32 +356,43 @@ class _MapScreenState extends State<MapScreen> {
                           final color = aqiColor(aqi);
                           return Marker(
                             point: LatLng(s.lat, s.lng),
-                            width: 56, height: 56,
+                            width: 62, height: 62,
                             child: GestureDetector(
                               onTap: () {
                                 _selectStation(s, aqi);
                                 _showStationPopup(context, s, aqi, l);
                               },
                               child: Container(
+                                padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: color, shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2.5),
-                                  boxShadow: [BoxShadow(color: color.withValues(alpha: 0.35),
-                                      blurRadius: 8, offset: const Offset(0, 3))],
+                                  color: Colors.white.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
                                 ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      val > 99 ? val.toInt().toString()
-                                          : val.toStringAsFixed(val >= 10 ? 0 : 1),
-                                      style: const TextStyle(color: Colors.white,
-                                          fontSize: 13, fontWeight: FontWeight.w800,
-                                          fontFamily: 'DMMono', height: 1),
-                                    ),
-                                    Text(unit, style: const TextStyle(color: Colors.white70,
-                                        fontSize: 7, fontWeight: FontWeight.w600)),
-                                  ],
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: color, 
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.9), width: 2.5),
+                                    boxShadow: [
+                                      BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 4)),
+                                      BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 1, spreadRadius: 0.5),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        val > 99 ? val.toInt().toString()
+                                            : val.toStringAsFixed(val >= 10 ? 0 : 1),
+                                        style: const TextStyle(color: Colors.white,
+                                            fontSize: 14, fontWeight: FontWeight.w900,
+                                            fontFamily: 'DMMono', height: 1.1, letterSpacing: -0.5),
+                                      ),
+                                      Text(unit, style: const TextStyle(color: Colors.white70,
+                                          fontSize: 7, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -386,27 +400,31 @@ class _MapScreenState extends State<MapScreen> {
                         }).toList(),
                       ),
 
-                      // ── Marqueur GPS "Vous êtes ici" ─────────────────
+                      // ── Marqueur GPS "Vous êtes ici" AVEC AQI ──────────
                       if (hasGps)
                         MarkerLayer(
                           markers: [
                             Marker(
                               point: LatLng(ap.lastLat!, ap.lastLng!),
-                              width: 44, height: 44,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: AppColors.accent,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 3),
-                                  boxShadow: [BoxShadow(
-                                      color: AppColors.accent.withValues(alpha: 0.4),
-                                      blurRadius: 12)],
+                              width: 60, height: 60,
+                                child: _PulsingUserMarker(
+                                  aqi: ap.data.aqi,
+                                  label: l.mapYouLabel.toUpperCase(),
+                                  onTap: () => _selectStation(
+                                    AqiStation(
+                                      name: l.mapYourLocation,
+                                      lat: ap.lastLat!,
+                                      lng: ap.lastLng!,
+                                      aqi: ap.data.aqi,
+                                      pm25: ap.data.pm25,
+                                      pm10: ap.data.pm10 ?? 0,
+                                      no2: ap.data.no2,
+                                      o3: ap.data.o3,
+                                      source: ap.data.stationSource,
+                                    ),
+                                    ap.data.aqi
+                                  ),
                                 ),
-                                child: const Center(
-                                  child: Text('📍',
-                                    style: TextStyle(fontSize: 18)),
-                                ),
-                              ),
                             ),
                           ],
                         ),
@@ -779,6 +797,73 @@ class _MapScreenState extends State<MapScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+class _PulsingUserMarker extends StatefulWidget {
+  final int aqi;
+  final String label;
+  final VoidCallback onTap;
+  const _PulsingUserMarker({required this.aqi, required this.label, required this.onTap});
+
+  @override
+  State<_PulsingUserMarker> createState() => _PulsingUserMarkerState();
+}
+
+class _PulsingUserMarkerState extends State<_PulsingUserMarker> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
+  }
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = aqiColor(widget.aqi);
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (_, __) => Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 50 + (20 * _ctrl.value),
+              height: 50 + (20 * _ctrl.value),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.3 * (1 - _ctrl.value)),
+                shape: BoxShape.circle,
+              ),
+            ),
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 10)],
+              ),
+              child: Center(
+                child: Text('${widget.aqi}',
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900, fontFamily: 'DMMono')),
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(color: AppColors.ink, borderRadius: BorderRadius.circular(4)),
+                child: Text(widget.label, style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.w800)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // _StationRow
 // ─────────────────────────────────────────────────────────────────────────────
 class _StationRow extends StatelessWidget {

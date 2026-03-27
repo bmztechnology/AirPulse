@@ -51,7 +51,7 @@ class _AiScreenState extends State<AiScreen> {
               surfaceTintColor: Colors.transparent,
               pinned: true,
               title: Row(children: [
-                const Text('🤖', style: TextStyle(fontSize: 20)),
+                Hero(tag: 'app_logo', child: Image.asset('assets/images/logo.png', width: 24, height: 24)),
                 const SizedBox(width: 8),
                 Text(l.aiScreenTitle,
                   style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700,

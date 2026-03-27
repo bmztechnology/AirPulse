@@ -49,44 +49,53 @@ class AqiGauge extends StatelessWidget {
       (color: AppColors.aqiPurple, label: '201–300'),
       (color: AppColors.aqiMaroon, label: '300+'),
     ];
-    // pointer position: 0–1
-    final position = (aqi / 300).clamp(0.0, 1.0);
-
+    
     return Column(
       children: [
-        // FIX-MAJOR-02: LayoutBuilder replaces MediaQuery to get actual rendered width,
-        // preventing wrong pointer position on tablets, foldables, or padded containers.
         LayoutBuilder(
           builder: (context, constraints) {
             final gaugeWidth = constraints.maxWidth;
-            return Stack(
-              children: [
-                Row(
-                  children: segments.map((s) => Expanded(
-                    child: Container(
-                      height: 8,
-                      margin: const EdgeInsets.symmetric(horizontal: 1),
-                      decoration: BoxDecoration(
-                        color: s.color.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(4),
+            return TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: (aqi / 300).clamp(0.0, 1.0)),
+              duration: const Duration(milliseconds: 1200),
+              curve: Curves.elasticOut,
+              builder: (context, pos, _) {
+                return Stack(
+                  children: [
+                    Row(
+                      children: segments.map((s) => Expanded(
+                        child: Container(
+                          height: 8,
+                          margin: const EdgeInsets.symmetric(horizontal: 1),
+                          decoration: BoxDecoration(
+                            color: s.color.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      )).toList(),
+                    ),
+                    Positioned(
+                      left: (pos * gaugeWidth - 6).clamp(0.0, gaugeWidth - 12),
+                      top: 0,
+                      child: Container(
+                        width: 12,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: aqiColor(aqi),
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: aqiColor(aqi).withValues(alpha: 0.6),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  )).toList(),
-                ),
-                Positioned(
-                  left: (position * gaugeWidth - 6).clamp(0.0, gaugeWidth - 12),
-                  top: 0,
-                  child: Container(
-                    width: 12,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: aqiColor(aqi),
-                      borderRadius: BorderRadius.circular(4),
-                      boxShadow: [BoxShadow(color: aqiColor(aqi).withValues(alpha: 0.4), blurRadius: 6)],
-                    ),
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             );
           },
         ),
@@ -95,7 +104,7 @@ class AqiGauge extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: segments.map((s) => Text(
             s.label,
-            style: const TextStyle(fontSize: 8, color: AppColors.ink3, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 8, color: AppColors.ink3, fontWeight: FontWeight.w700, letterSpacing: 0.3),
           )).toList(),
         ),
       ],
@@ -125,9 +134,14 @@ class PollutantCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = aqiColor(aqi);
     final bg = aqiBgColor(aqi);
-    return Semantics(
-      button: onTap != null,
-      label: '$label: $value $unit',
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.8, end: 1.0),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) => Transform.scale(
+        scale: scale,
+        child: child,
+      ),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
@@ -136,31 +150,50 @@ class PollutantCard extends StatelessWidget {
             color: AppColors.cream,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.ink3, letterSpacing: 0.6)),
+              Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.ink3, letterSpacing: 0.8)),
               const SizedBox(height: 4),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: color, fontFamily: 'DMMono')),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: double.tryParse(value) ?? 0),
+                    duration: const Duration(milliseconds: 1000),
+                    builder: (context, v, _) => Text(
+                      v.toStringAsFixed(value.contains('.') ? 1 : 0),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: color, fontFamily: 'DMMono', letterSpacing: -0.5),
+                    ),
+                  ),
                   const SizedBox(width: 3),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 2),
-                    child: Text(unit, style: const TextStyle(fontSize: 9, color: AppColors.ink3, fontWeight: FontWeight.w600)),
+                    child: Text(unit, style: const TextStyle(fontSize: 9, color: AppColors.ink3, fontWeight: FontWeight.w700)),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: (aqi / 200).clamp(0.0, 1.0),
-                  backgroundColor: bg,
-                  valueColor: AlwaysStoppedAnimation(color),
-                  minHeight: 4,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: (aqi / 200).clamp(0.0, 1.0)),
+                  duration: const Duration(milliseconds: 1500),
+                  curve: Curves.easeInOutExpo,
+                  builder: (context, prog, _) => LinearProgressIndicator(
+                    value: prog,
+                    backgroundColor: bg,
+                    valueColor: AlwaysStoppedAnimation(color),
+                    minHeight: 4,
+                  ),
                 ),
               ),
             ],
@@ -334,6 +367,90 @@ class InsightCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Resilient Error View
+// ─────────────────────────────────────────────────────────────────────────────
+class ResilientErrorView extends StatelessWidget {
+  final String title;
+  final String description;
+  final String icon;
+  final String buttonLabel;
+  final VoidCallback onAction;
+  final bool loading;
+
+  const ResilientErrorView({
+    super.key,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.buttonLabel,
+    required this.onAction,
+    this.loading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(seconds: 1),
+              curve: Curves.elasticOut,
+              builder: (context, scale, child) => Transform.scale(
+                scale: scale,
+                child: child,
+              ),
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: AppColors.cream2,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.border, width: 2),
+                ),
+                child: Center(child: Text(icon, style: const TextStyle(fontSize: 48))),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.ink),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14, color: AppColors.ink3, height: 1.6),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton(
+                onPressed: loading ? null : onAction,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.ink,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
+                ),
+                child: loading
+                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : Text(buttonLabel.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -77,23 +77,27 @@ class AiInsightService {
       _    => 'Answer in English.',
     };
 
-    return '''You are a precision air quality health advisor. Give a short, actionable analysis.
-
+    return '''You are an elite Silicon Valley health-tech advisor. Analyze this data with extreme precision.
+    
 Profile: $profileDesc
-Time: ${hour}h, Location: ${d.stationName}
-AQI now: ${d.aqi} (PM2.5: ${d.pm25.toStringAsFixed(1)}μg/m³, NO2: ${d.no2.toStringAsFixed(0)}μg/m³, O3: ${d.o3.toStringAsFixed(0)}μg/m³)
-Forecast: +2h AQI $aqi2h, +4h AQI $aqi4h
-Weather: ${d.weather.tempC.toStringAsFixed(0)}°C, wind ${d.weather.windKmh.toStringAsFixed(0)}km/h ${d.weather.windDir}, humidity ${d.weather.humidity}%, UV ${d.weather.uvIndex}
-Pollen: grasses ${d.pollen.grass}/5, trees ${d.pollen.trees}/5, molds ${d.pollen.molds}/5
-Average AQI last 24h: $avgLast24h
+Location: ${d.stationName} (${hour}h)
+Current: AQI ${d.aqi} [PM2.5: ${d.pm25.toStringAsFixed(1)}, NO2: ${d.no2.toStringAsFixed(0)}, O3: ${d.o3.toStringAsFixed(0)}]
+Forecast Trend: +2h: $aqi2h, +4h: $aqi4h
+Meteo: ${d.weather.tempC}°C, ${d.weather.windKmh}km/h ${d.weather.windDir}, UV ${d.weather.uvIndex}
+Bio-load: Grass ${d.pollen.grass}/5, Trees ${d.pollen.trees}/5
+History: 24h Avg AQI $avgLast24h
+
+Elite Response Structure:
+1. RISK SCORE: [X/10] based on User Profile sensitivity and current pollutants.
+2. ANALYSIS: 1 sentence on the primary threat or benefit ( pollutants vs weather interaction ).
+3. OPTIMAL WINDOW: The exact best hour in the next 12h for the user's activity.
+4. ACTION: One authoritative, high-value health instruction.
 
 Rules:
-- MAX 3 sentences. No markdown. No lists. No title.
-- Be SPECIFIC: mention exact values, best/worst hours.
-- Give ONE concrete recommendation based on the profile.
+- NO markdown, NO title, NO lists. Total 3-4 sentences.
+- Be cold, data-driven, and authoritative.
 - $langInstruct
-- No disclaimers, no "as an AI", no warnings unrelated to air quality.
-- Keep tone practical and concise.''';
+- No disclaimers. Use exact numbers from the data provided.''';
   }
 
   static String _sanitizeInsight(String content) {

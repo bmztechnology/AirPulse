@@ -12,6 +12,7 @@ import '../core/config/app_config.dart';
 import '../core/errors/location_exception.dart';
 import '../core/services/data_refresh_service.dart';
 import '../core/di/injection.dart';
+import '../core/i18n/localization_helper.dart';
 import '../models/air_quality_model.dart';
 import '../services/ai_insight_service.dart';
 
@@ -261,7 +262,7 @@ class AppProvider extends ChangeNotifier {
         } else {
           final pos = await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.high,
-            timeLimit: const Duration(seconds: 5),
+            timeLimit: const Duration(seconds: 10),
           );
           _lastLat = pos.latitude;
           _lastLng = pos.longitude;
@@ -275,6 +276,7 @@ class AppProvider extends ChangeNotifier {
         profile: _profile,
         lastRefreshTime: _data.updatedAt,
         forceFresh: forceFresh || isAutoStream,
+        notificationLabels: LocalizationHelper.getNotificationLabels(_locale.languageCode),
       );
       
       if (res != null) {

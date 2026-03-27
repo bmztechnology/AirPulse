@@ -74,7 +74,10 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
       _ => l.errorGenericRefresh,
     };
     
-    _showSnackBar(message, ap, l);
+    final isWarning = ap.refreshErrorType == RefreshErrorType.offlineWithCache || 
+                     ap.refreshErrorType == RefreshErrorType.locationTimeout;
+    
+    _showSnackBar(message, ap, l, isWarning: isWarning);
     ap.clearError();
   }
 
@@ -115,11 +118,11 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
     );
   }
 
-  void _showSnackBar(String message, AppProvider ap, AppLocalizations l) {
+  void _showSnackBar(String message, AppProvider ap, AppLocalizations l, {bool isWarning = false}) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),
-      backgroundColor: AppColors.aqiRed,
+      backgroundColor: isWarning ? Colors.amber[800] : AppColors.aqiRed,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       duration: const Duration(seconds: 4),

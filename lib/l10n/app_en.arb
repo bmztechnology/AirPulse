@@ -329,6 +329,8 @@
     }
   },
   "mapStationPm25": "{source} · PM2.5: {pm25} μg",
+  "mapYourLocation": "Your location",
+  "mapYouLabel": "YOU",
   "@mapStationPm25": {
     "placeholders": {
       "source": {

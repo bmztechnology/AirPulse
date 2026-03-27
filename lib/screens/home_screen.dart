@@ -170,7 +170,10 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 40, maxHeight: 40),
-                        child: Image.asset('assets/images/logo.png', width: 32, height: 32, fit: BoxFit.contain),
+                        child: Hero(
+                          tag: 'app_logo',
+                          child: Image.asset('assets/images/logo.png', width: 32, height: 32, fit: BoxFit.contain),
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Flexible(
@@ -228,179 +231,213 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
 
-              // ── Loading Shimmer ou Contenu ─────────────────────────────
-              if (ap.loading && !ap.initialized)
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    child: _HomeShimmer(),
-                  ),
-                )
-              else ...[
-                // ── Location bar ───────────────────────────────────────────
-                SliverToBoxAdapter(
-                child: GestureDetector(
-                  onTap: ap.refreshLocation,
-                  child: Container(
-                    margin:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.cream2,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text('📍', style: TextStyle(fontSize: 18)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(ap.locationName,
-                              style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.ink)),
-                        ),
-                        ap.loading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: AppColors.accent))
-                            : const Text('↻',
-                                style: TextStyle(
-                                    fontSize: 14, color: AppColors.ink3)),
-                      ],
-                    ),
-                  ),
+              // ── Loading Shimmer ou Contenu ou Erreur ─────────────────────────────
+              SliverToBoxAdapter(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 600),
+                  child: _buildMainContent(ap, d, l, context),
                 ),
               ),
-
-              // ── AQI Main Card ──────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: _AqiMainCard(
-                  data: d,
-                  statusLabel: _statusLabel(d.status, l),
-                  verdictText: _verdictText(ap.profile, d.aqi, l),
-                  aqiSourceLabel: l.aqiSource,
-                  shareLabel: l.shareBtn,
-                  onShare: () => _showShareSheet(context, d, ap.profile, l),
-                ),
-              ),
-
-              // ── Air Footprint Preview ──────────────────────────────────
-              SliverToBoxAdapter(
-                child: _AirFootprintPreview(l: l),
-              ),
-
-              // ── Recommendation ─────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: _RecommendationCard(
-                  profile: ap.profile,
-                  aqi: d.aqi,
-                  // FIX-BUG-7: tips are now profile-aware and fully localised.
-                  profileTitle: _profileLabel(ap.profile, l),
-                  l: l,
-                ),
-              ),
-
-              // ── Pollutants grid ────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: SectionHeader(
-                  title: l.sectionPollutants,
-                  actionLabel: l.seeAll,
-                  onAction: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen())),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: SliverGrid(
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 1.6,
-                  ),
-                  delegate: SliverChildListDelegate([
-                    PollutantCard(
-                        label: l.pm25Label,
-                        value: d.pm25.toStringAsFixed(1),
-                        unit: 'μg/m³',
-                        aqi: d.aqi,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
-                    PollutantCard(
-                        label: l.pm10Label,
-                        value: d.pm10?.toStringAsFixed(1) ?? 'N/A',
-                        unit: 'μg/m³',
-                        aqi: (d.aqi * 0.6).toInt(),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
-                    PollutantCard(
-                        label: l.no2Label,
-                        value: d.no2.toStringAsFixed(0),
-                        unit: 'μg/m³',
-                        aqi: (d.aqi * 0.85).toInt(),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
-                    PollutantCard(
-                        label: l.o3Label,
-                        value: d.o3.toStringAsFixed(0),
-                        unit: 'μg/m³',
-                        aqi: (d.aqi * 0.6).toInt(),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
-                    PollutantCard(
-                        label: l.so2Label,
-                        value: d.so2.toStringAsFixed(1),
-                        unit: 'μg/m³',
-                        aqi: (d.aqi * 0.1).toInt(),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
-                    PollutantCard(
-                        label: l.coLabel,
-                        value: d.co.toStringAsFixed(2),
-                        unit: 'mg/m³',
-                        aqi: (d.aqi * 0.05).toInt(),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
-                  ]),
-                ),
-              ),
-
-              // ── 24h Forecast ───────────────────────────────────────────
-              SliverToBoxAdapter(
-                  child: SectionHeader(title: l.sectionForecast)),
-              SliverToBoxAdapter(
-                  child: _ForecastStrip(forecast: d.forecast, nowLabel: l.now)),
-
-              // ── Mini map ───────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: _MiniMapCard(
-                  // FIX-BUG-8: label is now localised via ARB key.
-                  label: l.mapExplore,
-                  onTap: () => _navigate(context, 1),
-                ),
-              ),
-
-              // ── Health insights ────────────────────────────────────────
-              SliverToBoxAdapter(
-                  child: SectionHeader(title: l.sectionInsights)),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    // Si clé IA présente → carte IA unifiée
-                    if (ap.hasAiKey) ...[
-                      _AiInsightCard(ap: ap, l: l),
-                    ] else ...[
-                      // Fallback : 4 cartes statiques
-                      ..._buildDynamicInsights(d, l),
-                    ],
-                  ]),
-                ),
-              ),
-              ], // Fin du else (contenu principal)
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMainContent(AppProvider ap, AirQualityData d, AppLocalizations l, BuildContext context) {
+    // 1. Loading Initial
+    if (ap.loading && !ap.initialized) {
+      return Padding(
+        key: const ValueKey('shimmer'),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: const _HomeShimmer(),
+      );
+    }
+
+    // 2. Erreurs Bloquantes
+    if (ap.initialized && ap.refreshErrorType != null && ap.refreshErrorType != RefreshErrorType.offlineWithCache) {
+      final (title, desc, icon, btn, action) = switch (ap.refreshErrorType!) {
+        RefreshErrorType.gpsDisabled => (
+          l.gpsDisabledMessage,
+          'Your GPS is turned off. We need it to find the nearest air quality station.',
+          '🛰️',
+          l.enableGpsBtn.toUpperCase(),
+          ap.openLocationSettings
+        ),
+        RefreshErrorType.locationPermissionDenied || RefreshErrorType.locationPermissionDeniedForever => (
+          l.locationPermissionDeniedMessage,
+          'Location access is denied. Please enable it in system settings.',
+          '🔒',
+          l.btnSettings.toUpperCase(),
+          ap.openAppSettings
+        ),
+        RefreshErrorType.offlineNoData => (
+          l.errorOfflineNoData,
+          'We couldn\'t fetch the latest data and no cache is available.',
+          '🌐',
+          l.retryBtn.toUpperCase(),
+          ap.refreshLocation
+        ),
+        RefreshErrorType.locationTimeout => (
+          l.locationTimeoutMessage,
+          'Still trying to fix your position. Are you outdoors?',
+          '📡',
+          l.retryBtn.toUpperCase(),
+          ap.refreshLocation
+        ),
+        _ => (
+          'Unexpected Error',
+          'Something went wrong while fetching data.',
+          '⚠️',
+          'RETRY',
+          ap.refreshLocation
+        ),
+      };
+
+      return Container(
+        key: const ValueKey('error'),
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: ResilientErrorView(
+          title: title,
+          description: desc,
+          icon: icon,
+          buttonLabel: btn,
+          onAction: action,
+          loading: ap.loading,
+        ),
+      );
+    }
+
+    // 3. Contenu Principal
+    return Column(
+      key: const ValueKey('content'),
+      children: [
+        // ── Location bar ───────────────────────────────────────────
+        GestureDetector(
+          onTap: ap.refreshLocation,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.cream2,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                const Text('📍', style: TextStyle(fontSize: 18)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(ap.locationName,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink)),
+                ),
+                ap.loading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColors.accent))
+                    : const Text('↻',
+                        style: TextStyle(
+                            fontSize: 14, color: AppColors.ink3)),
+              ],
+            ),
+          ),
+        ),
+
+        // ── AQI Main Card ──────────────────────────────────────────
+        _AqiMainCard(
+          data: d,
+          statusLabel: _statusLabel(d.status, l),
+          verdictText: _verdictText(ap.profile, d.aqi, l),
+          aqiSourceLabel: l.aqiSource,
+          shareLabel: l.shareBtn,
+          onShare: () => _showShareSheet(context, d, ap.profile, l),
+        ),
+
+        // ── Air Footprint Preview ──────────────────────────────────
+        _AirFootprintPreview(l: l),
+
+        // ── Recommendation ─────────────────────────────────────────
+        _RecommendationCard(
+          profile: ap.profile,
+          aqi: d.aqi,
+          profileTitle: _profileLabel(ap.profile, l),
+          l: l,
+        ),
+
+        // ── Pollutants grid ────────────────────────────────────────
+        SectionHeader(
+          title: l.sectionPollutants,
+          actionLabel: l.seeAll,
+          onAction: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen())),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.6,
+            children: [
+              PollutantCard(
+                  label: l.pm25Label,
+                  value: d.pm25.toStringAsFixed(1),
+                  unit: 'μg/m³',
+                  aqi: d.aqi,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
+              PollutantCard(
+                  label: l.pm10Label,
+                  value: d.pm10?.toStringAsFixed(1) ?? 'N/A',
+                  unit: 'μg/m³',
+                  aqi: (d.aqi * 0.6).toInt(),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
+              PollutantCard(
+                  label: l.no2Label,
+                  value: d.no2.toStringAsFixed(0),
+                  unit: 'μg/m³',
+                  aqi: (d.aqi * 0.85).toInt(),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
+              PollutantCard(
+                  label: l.o3Label,
+                  value: d.o3.toStringAsFixed(0),
+                  unit: 'μg/m³',
+                  aqi: (d.aqi * 0.6).toInt(),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailsScreen()))),
+            ],
+          ),
+        ),
+
+        // ── 24h Forecast ───────────────────────────────────────────
+        SectionHeader(title: l.sectionForecast),
+        _ForecastStrip(forecast: d.forecast, nowLabel: l.now),
+
+        // ── Mini map ───────────────────────────────────────────────
+        _MiniMapCard(
+          label: l.mapExplore,
+          onTap: () => _navigate(context, 1),
+        ),
+
+        // ── Health insights ────────────────────────────────────────
+        SectionHeader(title: l.sectionInsights),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+          child: Column(
+            children: [
+              if (ap.hasAiKey)
+                _AiInsightCard(ap: ap, l: l)
+              else
+                ..._buildDynamicInsights(d, l),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
