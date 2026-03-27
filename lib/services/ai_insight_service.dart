@@ -5,10 +5,11 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/air_quality_model.dart';
+import '../core/config/app_config.dart';
 
 class AiInsightService {
-  static const _endpoint = 'https://api.groq.com/openai/v1/chat/completions';
-  static const _model    = 'llama-3.3-70b-versatile';
+  static const _endpoint = AppConfig.aiEndpoint;
+  static const _model    = AppConfig.aiModel;
 
   // ── Clé API stockée statiquement — saisie dans les Settings ──────────────
   static String apiKey = '';

@@ -7,10 +7,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../core/config/app_config.dart';
+import '../core/errors/location_exception.dart';
+import '../core/services/data_refresh_service.dart';
+import '../core/di/injection.dart';
 import '../models/air_quality_model.dart';
 import '../services/ai_insight_service.dart';
-import '../core/di/injection.dart';
-import '../core/services/data_refresh_service.dart';
 
 enum RefreshErrorType {
   gpsDisabled,
@@ -60,6 +63,7 @@ class AppProvider extends ChangeNotifier {
   bool get waitingForSettings => _waitingForSettings;
   
   StreamSubscription<Position>? _positionStream;
+  StreamSubscription<ServiceStatus>? _serviceStatusStream;
   bool _isTracking = false;
   bool get isTracking => _isTracking;
 
@@ -101,16 +105,43 @@ class AppProvider extends ChangeNotifier {
 
   AppProvider() {
     _loadPrefs().then((_) {
-      checkLocationService();
+      _initGps();
       startLocationTracking();
     });
   }
 
   /// START: Radical Continuous Positioning
+  void _initGps() {
+    _serviceStatusStream?.cancel();
+    _serviceStatusStream = Geolocator.getServiceStatusStream().listen((status) {
+      final disabled = status == ServiceStatus.disabled;
+      if (disabled != _gpsDisabled) {
+        _gpsDisabled = disabled;
+        if (disabled) {
+          _refreshErrorType = RefreshErrorType.gpsDisabled;
+        } else {
+          // If re-enabled, start tracking immediately
+          startLocationTracking();
+        }
+        notifyListeners();
+      }
+    });
+  }
+
+  /// Unified Location Tracking & Management
   Future<void> startLocationTracking() async {
     if (_isTracking) return;
     
-    // Check permission first
+    // 1. Check Service
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      _gpsDisabled = true;
+      _refreshErrorType = RefreshErrorType.gpsDisabled;
+      notifyListeners();
+      return;
+    }
+
+    // 2. Check & Request Permissions
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -124,24 +155,27 @@ class AppProvider extends ChangeNotifier {
       return;
     }
 
+    // 3. Start high-frequency stream
+    _gpsDisabled = false;
     _isTracking = true;
     _positionStream?.cancel();
     
     _positionStream = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
+      locationSettings: LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 3, // Performance-first: only update if moved 3m
+        distanceFilter: AppConfig.gpsDistanceFilter, 
       ),
     ).listen(
-      (Position position) {
-        _lastLat = position.latitude;
-        _lastLng = position.longitude;
-        // Optimization: only notify if needed, but for "Real-time" we notify
-        notifyListeners();
+      (Position pos) {
+        _lastLat = pos.latitude;
+        _lastLng = pos.longitude;
+        // Trigger data refresh when position updates significantly
+        refreshLocation(isAutoStream: true);
       },
       onError: (e) {
         debugPrint('AirPulse: GPS Stream Error: $e');
         _isTracking = false;
+        notifyListeners();
       },
     );
   }
@@ -151,14 +185,6 @@ class AppProvider extends ChangeNotifier {
     _positionStream = null;
     _isTracking = false;
     notifyListeners();
-  }
-
-  Future<void> checkLocationService() async {
-    final enabled = await Geolocator.isLocationServiceEnabled();
-    if (!enabled) {
-      _refreshErrorType = RefreshErrorType.gpsDisabled;
-      notifyListeners();
-    }
   }
   /// END: Radical Continuous Positioning
 
@@ -212,26 +238,43 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> refreshLocation({bool forceFresh = false}) async {
-    debugPrint('AirPulse: refreshLocation triggered (forceFresh: $forceFresh)');
-    if (_loading) return;
-    _loading = true;
-    _error = null;
-    _refreshErrorType = null;
-    notifyListeners();
+  /// Centralized Data Refresh
+  Future<void> refreshLocation({bool forceFresh = false, bool isAutoStream = false}) async {
+    if (_loading && !isAutoStream) return;
+    
+    // Prevent screen flickering on automated stream updates
+    if (!isAutoStream) {
+      _loading = true;
+      _error = null;
+      _refreshErrorType = null;
+      notifyListeners();
+    }
+
     try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        _gpsDisabled = true;
-        _refreshErrorType = RefreshErrorType.gpsDisabled;
-        return;
+      // Robust GPS acquisition: Last Known -> Current -> Wait for Stream
+      if (_lastLat == null || _lastLng == null) {
+        final lastKnown = await Geolocator.getLastKnownPosition();
+        if (lastKnown != null) {
+          _lastLat = lastKnown.latitude;
+          _lastLng = lastKnown.longitude;
+          debugPrint('AirPulse: Using lastKnownPosition fallback');
+        } else {
+          final pos = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high,
+            timeLimit: const Duration(seconds: 5),
+          );
+          _lastLat = pos.latitude;
+          _lastLng = pos.longitude;
+          debugPrint('AirPulse: Using getCurrentPosition');
+        }
       }
 
-      _gpsDisabled = false;
       final res = await sl<DataRefreshService>().performRefresh(
+        lat: _lastLat!,
+        lng: _lastLng!,
         profile: _profile,
         lastRefreshTime: _data.updatedAt,
-        forceFresh: forceFresh,
+        forceFresh: forceFresh || isAutoStream,
       );
       
       if (res != null) {
@@ -243,42 +286,41 @@ class AppProvider extends ChangeNotifier {
         await _syncHistoryWithPrefs();
         unawaited(_refreshAiInsight());
       } else {
-        final hasCache = await _loadFromCache();
-        await _syncHistoryWithPrefs();
-        if (hasCache) {
-          _refreshErrorType = RefreshErrorType.offlineWithCache;
-        } else {
-          _refreshErrorType = RefreshErrorType.offlineNoData;
-        }
+        await _handleRefreshFailure();
       }
-    } on LocationException catch (e) {
-      _gpsDisabled = e.error == LocationError.serviceDisabled;
-      _refreshErrorType = switch (e.error) {
-        LocationError.serviceDisabled => RefreshErrorType.gpsDisabled,
-        LocationError.permissionDenied => RefreshErrorType.locationPermissionDenied,
-        LocationError.permissionDeniedForever => RefreshErrorType.locationPermissionDeniedForever,
-        LocationError.timeout => RefreshErrorType.locationTimeout,
-        _ => RefreshErrorType.offlineNoData,
-      };
-      // ONLY set offlineWithCache if we don't already have a specific location error
-      final hasCache = await _loadFromCache();
-      if (hasCache && _refreshErrorType == null) {
-        _refreshErrorType = RefreshErrorType.offlineWithCache;
-      }
-      await _syncHistoryWithPrefs();
     } catch (e) {
-      debugPrint('AirPulse: refreshLocation error: $e');
-      _refreshErrorType = RefreshErrorType.offlineNoData;
-      final hasCache = await _loadFromCache();
-      if (hasCache) {
-        _refreshErrorType = RefreshErrorType.offlineWithCache;
+      if (e is LocationException) {
+        _handleLocationError(e);
+      } else {
+        debugPrint('AirPulse: refreshLocation error: $e');
+        await _handleRefreshFailure();
       }
-      await _syncHistoryWithPrefs();
     } finally {
       _initialized = true;
       _loading = false;
       notifyListeners();
     }
+  }
+
+  void _handleLocationError(LocationException e) {
+    _gpsDisabled = e.error == LocationError.serviceDisabled;
+    _refreshErrorType = switch (e.error) {
+      LocationError.serviceDisabled => RefreshErrorType.gpsDisabled,
+      LocationError.permissionDenied => RefreshErrorType.locationPermissionDenied,
+      LocationError.permissionDeniedForever => RefreshErrorType.locationPermissionDeniedForever,
+      LocationError.timeout => RefreshErrorType.locationTimeout,
+      _ => RefreshErrorType.offlineNoData,
+    };
+  }
+
+  Future<void> _handleRefreshFailure() async {
+    final hasCache = await _loadFromCache();
+    if (hasCache && _refreshErrorType == null) {
+      _refreshErrorType = RefreshErrorType.offlineWithCache;
+    } else if (!hasCache) {
+      _refreshErrorType = RefreshErrorType.offlineNoData;
+    }
+    await _syncHistoryWithPrefs();
   }
 
   Future<void> openLocationSettings() async {

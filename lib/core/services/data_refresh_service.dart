@@ -4,7 +4,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/air_quality_model.dart';
 import '../../features/exposure/domain/entities/exposure_record.dart';
@@ -12,40 +11,22 @@ import '../../features/exposure/domain/repositories/exposure_repository.dart';
 import '../../services/ai_insight_service.dart';
 import 'notification_service.dart';
 
-enum LocationError {
-  serviceDisabled,
-  permissionDenied,
-  permissionDeniedForever,
-  timeout,
-  unknown
-}
-
-class LocationException implements Exception {
-  final LocationError error;
-  LocationException(this.error);
-  @override
-  String toString() => 'LocationException: $error';
-}
+import '../config/app_config.dart';
 
 class DataRefreshService {
   final ExposureRepository exposureRepository;
 
   DataRefreshService(this.exposureRepository);
 
-  /// Performs a full data refresh (GPS -> APIs -> Cache -> Exposure Log)
-  /// Returns the updated AirQualityData or null if failed.
+  /// Performs a full data refresh (APIs -> Cache -> Exposure Log)
   Future<AirQualityData?> performRefresh({
+    required double lat,
+    required double lng,
     required UserProfile profile,
     DateTime? lastRefreshTime,
     bool forceFresh = false,
   }) async {
     try {
-      // 1. Get GPS
-      final pos = await _getPosition(forceFresh: forceFresh);
-      if (pos == null) return null; // Should not happen with current _getPosition
-
-      final lat = pos.latitude;
-      final lng = pos.longitude;
 
       // 2. Fetch parallel data
       final cityName = await _fetchCityName(lat, lng);
@@ -79,8 +60,6 @@ class DataRefreshService {
       unawaited(_updateAqiHistory(aqiData));
 
       return aqiData;
-    } on LocationException {
-      rethrow;
     } catch (e) {
       debugPrint('AirPulse: DataRefreshService error: $e');
       return null;
@@ -175,46 +154,6 @@ class DataRefreshService {
 
   // ── Private helpers (extracted from AppProvider) ──────────────────────────
 
-  Future<Position?> _getPosition({bool forceFresh = false}) async {
-    try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        throw LocationException(LocationError.serviceDisabled);
-      }
-      var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-        if (perm == LocationPermission.denied) {
-          throw LocationException(LocationError.permissionDenied);
-        }
-      }
-      if (perm == LocationPermission.deniedForever) {
-        throw LocationException(LocationError.permissionDeniedForever);
-      }
-      
-      // 1. Try last known position first (fast) unless forceFresh is requested
-      if (!forceFresh) {
-        final lastKnown = await Geolocator.getLastKnownPosition();
-        if (lastKnown != null) {
-          // If less than 5 minutes old, use it for speed
-          final age = DateTime.now().difference(lastKnown.timestamp);
-          if (age.inMinutes < 5) return lastKnown;
-        }
-      }
-
-      // 2. Fallback to current position (precise)
-      return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 12),
-      ).timeout(const Duration(seconds: 13), onTimeout: () {
-        throw LocationException(LocationError.timeout);
-      });
-    } on LocationException {
-      rethrow;
-    } catch (e) {
-      debugPrint('AirPulse: _getPosition error: $e');
-      throw LocationException(LocationError.unknown);
-    }
-  }
 
   Future<String> _fetchCityName(double lat, double lng) async {
     try {
@@ -308,7 +247,7 @@ class DataRefreshService {
     try {
       final l1 = lat - 0.5; final n1 = lng - 0.5;
       final l2 = lat + 0.5; final n2 = lng + 0.5;
-      final uri = Uri.parse('https://api.waqi.info/map/bounds/?token=demo&latlng=$l1,$n1,$l2,$n2');
+      final uri = Uri.parse('${AppConfig.waqiEndpoint}?token=${AppConfig.waqiToken}&latlng=$l1,$n1,$l2,$n2');
       final resp = await http.get(uri).timeout(const Duration(seconds: 10));
       if (resp.statusCode == 200) {
         final json = jsonDecode(resp.body);

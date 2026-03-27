@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'providers/app_provider.dart';
@@ -31,10 +32,13 @@ void callbackDispatcher() {
       await initDependencies(); // GetIt + Services
       
       // 2. Perform refresh
-      // Since we don't have the AppProvider (ChangeNotifier) in BG,
-      // we use the service directly.
+      final pos = await Geolocator.getLastKnownPosition() 
+          ?? await Geolocator.getCurrentPosition(timeLimit: const Duration(seconds: 10));
+      
       final res = await sl<DataRefreshService>().performRefresh(
-        profile: UserProfile.cyclist, // Default for BG if not stored separately
+        lat: pos.latitude,
+        lng: pos.longitude,
+        profile: UserProfile.cyclist, 
       );
       
       return res != null;

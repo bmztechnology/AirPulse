@@ -451,45 +451,6 @@ class _MapScreenState extends State<MapScreen> {
                       ],
                     ),
                   ),
-
-                  // ── Permission Overlay ─────────────────────────────────────
-                  if (ap.lastLat == null && (ap.refreshErrorType == RefreshErrorType.locationPermissionDenied || 
-                                 ap.refreshErrorType == RefreshErrorType.locationPermissionDeniedForever))
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.black.withOpacity(0.5),
-                        child: Center(
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 40),
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: AppColors.cream,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text('📍', style: TextStyle(fontSize: 40)),
-                                const SizedBox(height: 16),
-                                Text(l.locationPermissionDeniedMessage,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.ink)),
-                                const SizedBox(height: 20),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.accent,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                  onPressed: () => ap.openAppSettings(),
-                                  child: Text(l.btnSettings),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),

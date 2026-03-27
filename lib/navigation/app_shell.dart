@@ -137,7 +137,6 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       if (ap.waitingForSettings) {
         ap.setWaitingForSettings(false);
-        ap.checkLocationService();
         ap.refreshLocation(forceFresh: true);
       }
       ap.startLocationTracking();
