@@ -58,6 +58,10 @@ class AppProvider extends ChangeNotifier {
 
   bool _waitingForSettings = false;
   bool get waitingForSettings => _waitingForSettings;
+  
+  StreamSubscription<Position>? _positionStream;
+  bool _isTracking = false;
+  bool get isTracking => _isTracking;
 
   void setWaitingForSettings(bool value) {
     _waitingForSettings = value;
@@ -96,8 +100,67 @@ class AppProvider extends ChangeNotifier {
   double get personalThreshold => _personalThreshold;
 
   AppProvider() {
-    _loadPrefs().then((_) => refreshLocation());
+    _loadPrefs().then((_) {
+      checkLocationService();
+      startLocationTracking();
+    });
   }
+
+  /// START: Radical Continuous Positioning
+  Future<void> startLocationTracking() async {
+    if (_isTracking) return;
+    
+    // Check permission first
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      _refreshErrorType = (permission == LocationPermission.deniedForever) 
+          ? RefreshErrorType.locationPermissionDeniedForever 
+          : RefreshErrorType.locationPermissionDenied;
+      notifyListeners();
+      return;
+    }
+
+    _isTracking = true;
+    _positionStream?.cancel();
+    
+    _positionStream = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 3, // Performance-first: only update if moved 3m
+      ),
+    ).listen(
+      (Position position) {
+        _lastLat = position.latitude;
+        _lastLng = position.longitude;
+        // Optimization: only notify if needed, but for "Real-time" we notify
+        notifyListeners();
+      },
+      onError: (e) {
+        debugPrint('AirPulse: GPS Stream Error: $e');
+        _isTracking = false;
+      },
+    );
+  }
+
+  void stopLocationTracking() {
+    _positionStream?.cancel();
+    _positionStream = null;
+    _isTracking = false;
+    notifyListeners();
+  }
+
+  Future<void> checkLocationService() async {
+    final enabled = await Geolocator.isLocationServiceEnabled();
+    if (!enabled) {
+      _refreshErrorType = RefreshErrorType.gpsDisabled;
+      notifyListeners();
+    }
+  }
+  /// END: Radical Continuous Positioning
 
   Future<void> _loadPrefs() async {
     try {

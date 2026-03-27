@@ -48,29 +48,74 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  bool _isDialogShowing = false;
+
   void _onProviderError() {
     if (!mounted) return;
     final ap = _lastProvider!;
     if (ap.error == null && ap.refreshErrorType == null) return;
     
     final l = AppLocalizations.of(context);
+    
+    // GPS/Permission errors -> Radical Dialog
+    if (ap.refreshErrorType == RefreshErrorType.gpsDisabled ||
+        ap.refreshErrorType == RefreshErrorType.locationPermissionDenied ||
+        ap.refreshErrorType == RefreshErrorType.locationPermissionDeniedForever) {
+      _showLocationDialog(ap, l);
+      return;
+    }
+
+    // Other errors (Network, etc) -> SnackBar
     final message = switch (ap.refreshErrorType) {
-      RefreshErrorType.gpsDisabled => l.gpsDisabledMessage,
-      RefreshErrorType.locationPermissionDenied => l.locationPermissionDeniedMessage,
-      RefreshErrorType.locationPermissionDeniedForever => l.locationPermissionDeniedForeverMessage,
       RefreshErrorType.locationTimeout => l.locationTimeoutMessage,
       RefreshErrorType.offlineWithCache => l.errorOfflineCached,
       RefreshErrorType.offlineNoData => l.errorOfflineNoData,
       null => ap.error ?? l.errorGenericRefresh,
+      _ => l.errorGenericRefresh,
+    };
+    
+    _showSnackBar(message, ap, l);
+    ap.clearError();
+  }
+
+  void _showLocationDialog(AppProvider ap, AppLocalizations l) {
+    if (_isDialogShowing) return;
+    _isDialogShowing = true;
+
+    final message = switch (ap.refreshErrorType) {
+      RefreshErrorType.gpsDisabled => l.gpsDisabledMessage,
+      RefreshErrorType.locationPermissionDenied => l.locationPermissionDeniedMessage,
+      RefreshErrorType.locationPermissionDeniedForever => l.locationPermissionDeniedForeverMessage,
+      _ => l.gpsDisabledMessage,
     };
 
-    final actionLabel = switch (ap.refreshErrorType) {
-      RefreshErrorType.gpsDisabled => l.enableGpsBtn,
-      RefreshErrorType.locationPermissionDenied => l.btnRequest,
-      RefreshErrorType.locationPermissionDeniedForever => l.btnSettings,
-      _ => l.retryBtn,
-    };
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Force interaction
+      builder: (context) => AlertDialog(
+        title: Text(l.appTitle),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _isDialogShowing = false;
+              switch (ap.refreshErrorType) {
+                case RefreshErrorType.gpsDisabled:
+                  ap.openLocationSettings();
+                default:
+                  ap.openAppSettings();
+              }
+              ap.clearError();
+            },
+            child: Text(l.btnOk),
+          ),
+        ],
+      ),
+    );
+  }
 
+  void _showSnackBar(String message, AppProvider ap, AppLocalizations l) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),
@@ -79,32 +124,25 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       duration: const Duration(seconds: 4),
       action: SnackBarAction(
-        label: actionLabel,
+        label: l.retryBtn,
         textColor: Colors.white,
-        onPressed: () async {
-          switch (ap.refreshErrorType) {
-            case RefreshErrorType.gpsDisabled:
-              await ap.openLocationSettings();
-            case RefreshErrorType.locationPermissionDeniedForever:
-            case RefreshErrorType.locationPermissionDenied:
-              await ap.openAppSettings();
-            default:
-              await ap.refreshLocation(forceFresh: true);
-          }
-        },
+        onPressed: () => ap.refreshLocation(forceFresh: true),
       ),
     ));
-    ap.clearError();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    final ap = context.read<AppProvider>();
     if (state == AppLifecycleState.resumed) {
-      final ap = context.read<AppProvider>();
       if (ap.waitingForSettings) {
         ap.setWaitingForSettings(false);
+        ap.checkLocationService();
         ap.refreshLocation(forceFresh: true);
       }
+      ap.startLocationTracking();
+    } else if (state == AppLifecycleState.paused) {
+      ap.stopLocationTracking();
     }
   }
 
